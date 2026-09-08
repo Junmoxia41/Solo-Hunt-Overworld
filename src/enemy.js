@@ -166,6 +166,7 @@ export class Enemy {
     g.player.totalKills++;
     g.killLog = g.killLog || {};
     g.killLog[this.type] = (g.killLog[this.type] || 0) + 1;
+    g.dungeon?.registrarMuerte(this.expReward, this.goldReward); // estadísticas de incursión
     g.addParticles(this.x + 16, this.y + 16, 'death_enemy', 18);
     g.audio.playSFX('death');
     g.combat.triggerScreenShake(4, 0.12);
@@ -188,6 +189,7 @@ export class Enemy {
       this.extraible = true;
       g.ui.toast('🌑 Cadáver inestable… acércate y pulsa [E] / [INT] para extraer', '#9b59b6');
     }
+    g.dungeon?.lootExtra(this); // botín adicional de mazmorra
   }
 
   /* ---------- Render ---------- */

@@ -23,11 +23,12 @@ export class Game {
   constructor() {
     this.canvas = document.getElementById('gameCanvas');
     this.ctx = this.canvas.getContext('2d');
-    this.state = 'MENU'; // MENU | PLAYING | PAUSED | INVENTORY | LEVEL_UP | GAME_OVER | DIALOGUE | EXTRACT
+    this.state = 'MENU'; // MENU | PLAYING | PAUSED | INVENTORY | LEVEL_UP | GAME_OVER | DIALOGUE | EXTRACT | PORTAL | DUNGEON_END
     this.lastTime = 0;
     this.deltaTime = 0;
     this.playTime = 0;
     this.totalDeaths = 0;
+    this.dungeon = null; // controlador de mazmorra activa (o null en overworld)
 
     // Entidades vivas del mundo
     this.enemies = [];
@@ -101,9 +102,9 @@ export class Game {
 
     this.spawnOleadaInicial();
 
-    // Autoguardado
+    // Autoguardado (nunca dentro de una mazmorra: el mapa sería temporal)
     this._autosave = setInterval(() => {
-      if (this.state === 'PLAYING') { SaveManager.save(this); this.ui.toast('💾 Guardado automático', '#888'); }
+      if (this.state === 'PLAYING' && !this.dungeon) { SaveManager.save(this); this.ui.toast('💾 Guardado automático', '#888'); }
     }, AUTOSAVE_INTERVAL);
 
     this.changeState('MENU');
@@ -138,7 +139,8 @@ export class Game {
       for (const g of this.groundItems) g.update(dt);
       this.combat.checkCollisions();
       this.camera.update(dt, this.player, this.currentMap);
-      this._poblacionEnemigos(dt);
+      this.dungeon?.update(dt); // cuenta atrás, portal de salida, jefe
+      if (!this.dungeon) this._poblacionEnemigos(dt);
       this._limpiar();
     }
     // Las partículas y números de daño SIEMPRE avanzan (también en pausa quedan preciosas)
@@ -186,8 +188,8 @@ export class Game {
 
     ctx.restore();
 
-    // HUD siempre por encima del mundo
-    if (this.state === 'PLAYING' || this.state === 'PAUSED' || this.state === 'DIALOGUE') {
+    // HUD por encima del mundo (también durante diálogos y paneles congelados)
+    if (['PLAYING', 'PAUSED', 'DIALOGUE', 'PORTAL', 'DUNGEON_END', 'EXTRACT'].includes(this.state)) {
       this.ui.renderHUD(ctx);
     }
   }
@@ -196,7 +198,7 @@ export class Game {
   changeState(newState) {
     this.state = newState;
     this.ui.onStateChange(newState);
-    if (newState === 'PAUSED') this.audio.duck(true);
+    if (['PAUSED', 'PORTAL', 'DUNGEON_END', 'LEVEL_UP', 'GAME_OVER'].includes(newState)) this.audio.duck(true);
     else this.audio.duck(false);
   }
 

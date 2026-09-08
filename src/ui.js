@@ -8,6 +8,7 @@ import { clamp, formatNumber } from './utils.js';
 import { ICONOS } from './item.js';
 import { SaveManager } from './save.js';
 import { puedeExtraer } from './shadow.js';
+import { Dungeon, RANGOS } from './dungeon.js';
 
 const FONT = '"Press Start 2P", monospace';
 
@@ -28,6 +29,7 @@ export class UI {
         else if (['PAUSED', 'INVENTORY'].includes(g.state)) g.changeState('PLAYING');
         else if (g.state === 'DIALOGUE') g.dialogue.cerrar();
         else if (g.state === 'EXTRACT') this.cancelarExtraccion();
+        else if (g.state === 'PORTAL') g.changeState('PLAYING');
       }
       if (e.code === 'KeyI') {
         if (g.state === 'PLAYING') g.changeState('INVENTORY');
@@ -133,7 +135,10 @@ export class UI {
     o.querySelector('#bt-resume').onclick = () => { g.audio.playSFX('menuOk'); g.changeState('PLAYING'); };
     o.querySelector('#bt-inv').onclick = () => g.changeState('INVENTORY');
     o.querySelector('#bt-mute').onclick = e => { const m = g.audio.toggleMute(); e.target.textContent = m ? '🔊 Quitar silencio (M)' : '🔇 Silenciar (M)'; };
-    o.querySelector('#bt-save').onclick = () => { SaveManager.save(g); g.audio.playSFX('menuOk'); this.toast('💾 Guardado'); };
+    o.querySelector('#bt-save').onclick = () => {
+      if (g.dungeon) return this.toast('🚫 No puedes guardar dentro de una mazmorra', '#e74c3c');
+      SaveManager.save(g); g.audio.playSFX('menuOk'); this.toast('💾 Guardado');
+    };
     o.querySelector('#bt-menu').onclick = () => { SaveManager.save(g); g.changeState('MENU'); };
   }
 
@@ -194,9 +199,14 @@ export class UI {
     o.querySelector('#bt-rev').onclick = () => {
       p.revivir();
       g.audio.playSFX('ariseOk');
-      g.audio.playBGM('overworld');
-      SaveManager.save(g);
-      g.changeState('PLAYING');
+      if (g.dungeon) {
+        // Caer dentro: la incursión fracasa, sales castigado al exterior
+        g.dungeon.fail('El vínculo se rompió tras tu caída');
+      } else {
+        g.audio.playBGM('overworld');
+        SaveManager.save(g);
+        g.changeState('PLAYING');
+      }
     };
     o.querySelector('#bt-menu').onclick = () => { SaveManager.save(g); location.reload(); };
   }
@@ -246,6 +256,81 @@ export class UI {
       el.addEventListener('pointerleave', () => document.getElementById('tt')?.remove());
     });
     o.querySelector('#bt-close').onclick = () => g.changeState('PLAYING');
+  }
+
+  /* ==================== Mazmorras: prompt y resultados ==================== */
+  /** Pantalla de confirmación al pisar un portal del overworld */
+  portalPrompt(portal) {
+    const g = this.game;
+    const cfg = RANGOS[portal.rango];
+    if (!cfg) return;
+    g.changeState('PORTAL');
+    const o = this._nuevoOverlay();
+    const nivelOk = g.player.level >= cfg.nivelMin;
+    const tiempo = Math.floor((cfg.pisos * cfg.segPiso + cfg.segExtra) / 60);
+    o.innerHTML = `
+      <div class="rpg-panel" style="border-color:${portal.css};text-align:center">
+        <h2 style="color:${portal.css}">🌀 PORTAL RANGO ${portal.rango}</h2>
+        <p>Mazmorra procedural · ${cfg.pisos} pisos · bestias de zona ${cfg.zona}</p>
+        <p>Jefe: <b>${cfg.jefe.nombre}</b></p>
+        <p>Límite de tiempo aprox: ${tiempo} min · EXP ×2 al completar</p>
+        <p style="color:${nivelOk ? '#2ecc71' : '#e74c3c'};margin-top:8px">
+          ${nivelOk ? `✔ Nivel ${cfg.nivelMin}+ requerido (eres nivel ${g.player.level})`
+                     : `✘ Requiere nivel ${cfg.nivelMin} — tú eres nivel ${g.player.level}`}</p>
+        <div style="display:flex;gap:10px;justify-content:center;margin-top:16px">
+          <button class="rpg-btn green" id="bt-enter" ${nivelOk ? '' : 'disabled'}>⚔️ ENTRAR</button>
+          <button class="rpg-btn small" id="bt-back">Atrás</button>
+        </div>
+      </div>`;
+    o.querySelector('#bt-back').onclick = () => g.changeState('PLAYING');
+    if (nivelOk) o.querySelector('#bt-enter').onclick = () => {
+      g.changeState('PLAYING');
+      g.audio.playSFX('portal');
+      g.addParticles(g.player.x + 16, g.player.y + 16, 'portal', 30);
+      new Dungeon(g, portal.rango).entrar();
+    };
+  }
+
+  /** Pantalla de resultados al completar la mazmorra */
+  mostrarResultadosDungeon(d) {
+    const g = this.game;
+    g.changeState('DUNGEON_END');
+    const o = this._nuevoOverlay();
+    o.innerHTML = `
+      <div class="rpg-panel" style="border-color:#ffd700;text-align:center">
+        <h2 style="color:#ffd700">🏆 MAZMORRA SUPERADA</h2>
+        <p style="font-size:14px;color:#ffd700;margin:6px 0">RANGO ${d.rango} COMPLETADO</p>
+        <div style="text-align:left;display:inline-block;margin:8px auto">
+          <p>☠️ Bajas: <b>${d.kills}</b></p>
+          <p>⭐ EXP ganada: ${d.exp} <span style="color:#2ecc71">(+${d.bonusExp} bonus ×2)</span></p>
+          <p>💰 Oro ganado: ${d.oro} <span style="color:#ffd700">(+${d.oroTotal} recompensa)</span></p>
+          <p>⏱️ Tiempo restante: ${d.tiempoSobra}</p>
+          <p>🌑 Sombras en servicio: ${d.sombras}/${SHADOW_MAX}</p>
+        </div>
+        <button class="rpg-btn" id="bt-end" style="margin-top:14px">SEGUIR CAZANDO</button>
+      </div>`;
+    o.querySelector('#bt-end').onclick = () => {
+      g.audio.playSFX('menuOk');
+      // si quedaron puntos de stat pendientes tras la lluvia de EXP, abrir su panel
+      g.changeState(g.player.statPoints > 0 ? 'LEVEL_UP' : 'PLAYING');
+    };
+  }
+
+  /** Pantalla de fracaso (tiempo agotado o caída) */
+  mostrarFalloDungeon(d) {
+    const g = this.game;
+    g.changeState('DUNGEON_END');
+    const o = this._nuevoOverlay();
+    o.style.background = 'rgba(30, 5, 10, 0.85)';
+    o.innerHTML = `
+      <div class="rpg-panel" style="border-color:#e74c3c;text-align:center">
+        <h2 style="color:#e74c3c">💔 INCURSIÓN FALLIDA</h2>
+        <p>${d.motivo}</p>
+        <p style="margin-top:8px">Alcanzaste el piso ${d.pisos} del rango ${d.rango}</p>
+        <p>☠️ ${d.kills} bajas · 💰 te llevas ${d.oro} de oro saqueado</p>
+        <button class="rpg-btn" id="bt-end" style="margin-top:14px">REAGRUPARSE</button>
+      </div>`;
+    o.querySelector('#bt-end').onclick = () => { g.audio.playSFX('menuOk'); g.changeState('PLAYING'); };
   }
 
   /* ==================== Minijuego ARISE ==================== */
@@ -470,6 +555,47 @@ export class UI {
       ctx.font = `9px ${FONT}`;
     }
 
+    /* --- Cinta de mazmorra: rango, piso y cuenta atrás --- */
+    if (g.dungeon) {
+      const d = g.dungeon;
+      const cinta = `🌀 ${d.rango} · Piso ${d.piso}/${d.cfg.pisos} · ${d._tmm()}`;
+      ctx.font = `9px ${FONT}`;
+      const cw = ctx.measureText(cinta).width + 26;
+      const quedanPoco = d.tiempoRestante < 30;
+      ctx.fillStyle = 'rgba(10,10,26,0.85)';
+      ctx.fillRect(W / 2 - cw / 2, pad, cw, 24);
+      ctx.strokeStyle = quedanPoco ? COLORS.hp : '#42a5f5';
+      ctx.strokeRect(W / 2 - cw / 2, pad, cw, 24);
+      ctx.fillStyle = quedanPoco ? COLORS.hp : '#9fd3ff';
+      ctx.textAlign = 'center';
+      ctx.fillText(cinta, W / 2, pad + 13);
+    }
+
+    /* --- Barra del jefe con marcas de fase --- */
+    const boss = g.enemies.find(e => e.esBoss && !e.isDead);
+    if (boss) {
+      const bw = Math.min(420, W - 60);
+      const bx = W / 2 - bw / 2, by = pad + (g.dungeon ? 34 : 6);
+      ctx.font = `10px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = boss.cssBoss;
+      ctx.fillText(`👑 ${boss.nombre}`, W / 2, by - 2);
+      // barra
+      ctx.fillStyle = '#1a0a12';
+      ctx.fillRect(bx, by + 8, bw, 12);
+      ctx.fillStyle = boss.cssBoss;
+      ctx.fillRect(bx, by + 8, bw * clamp(boss.hp / boss.maxHp, 0, 1), 12);
+      ctx.strokeStyle = '#000';
+      ctx.strokeRect(bx + .5, by + 8.5, bw, 12);
+      // marcas de fase (60% y 30%)
+      ctx.fillStyle = '#000';
+      ctx.fillRect(bx + bw * 0.4 - 1, by + 8, 2, 12);
+      ctx.fillRect(bx + bw * 0.7 - 1, by + 8, 2, 12);
+      ctx.font = `7px ${FONT}`;
+      ctx.fillStyle = COLORS.txt;
+      ctx.fillText(`FASE ${boss.phase}${boss.phase === 3 ? ' — ENAJENACIÓN' : ''}`, W / 2, by + 30);
+    }
+
     /* --- Minimapa --- */
     this._minimapa(ctx, W, pad);
 
@@ -508,10 +634,12 @@ export class UI {
       ctx.fillStyle = color;
       ctx.fillRect(x0 + wx * esc - r / 2, y0 + wy * esc - r / 2, r, r);
     };
-    // terreno simplificado (1 de cada 4 tiles)
+    // terreno simplificado (1 de cada 4 tiles) — color según tipo de mapa
+    const esMazmorra = m.name === 'mazmorra';
+    const colorSuelo = esMazmorra ? 'rgba(150,150,180,0.55)' : 'rgba(60,140,80,0.5)';
     for (let ty = 0; ty < m.height; ty += 4) for (let tx = 0; tx < m.width; tx += 4) {
       const s = m.suelo[ty * m.width + tx];
-      ctx.fillStyle = s === 3 ? '#1e3f8f' : m.solid[ty * m.width + tx] ? '#20242e' : 'rgba(60,140,80,0.5)';
+      ctx.fillStyle = s === 3 ? '#1e3f8f' : m.solid[ty * m.width + tx] ? (esMazmorra ? '#0c0a14' : '#20242e') : colorSuelo;
       ctx.fillRect(x0 + tx * 32 * esc, y0 + ty * 32 * esc, 4 * 32 * esc, 4 * 32 * esc);
     }
     for (const p of m.portalesPos) punto(p.x, p.y, p.css, 4);

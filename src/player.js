@@ -233,10 +233,11 @@ export class Player {
     for (const it of g.groundItems) {
       if (!it.recogido && Math.hypot(it.x - this.x, it.y - this.y) < 40) { it.recoger(); return; }
     }
-    // 3) Portal cercano → futura mazmorra (Milestone 2)
+    // 3) Portal cercano → salida de mazmorra o prompt de entrada
     for (const p of g.currentMap.portalesPos) {
       if (Math.hypot(p.x - this.x, p.y - this.y) < 46) {
-        g.ui.toast(`🌀 Portal Rango ${p.rango} — las mazmorras llegan en el Milestone 2`, '#9b59b6');
+        if (p.salida) { g.dungeon?.avanzar(); return; } // portal de salida del piso
+        g.ui.portalPrompt(p); // portal del overworld → pantalla de entrada
         g.audio.playSFX('portal');
         return;
       }
