@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#050816">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Solo Hunt">
+<title>Solo Hunt: Overworld</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Contenedor del canvas de Phaser -->
+  <div id="game-root"></div>
+  <!-- Sonda invisible para leer los Safe Area Insets (iOS/Android) en JS -->
+  <div id="safe-probe" aria-hidden="true"></div>
+  <noscript><p style="color:#fff;text-align:center;margin-top:40vh">Solo Hunt necesita JavaScript para ejecutarse.</p></noscript>
+
+  <!-- Motor del juego: Phaser 3 servido localmente (offline-first, sin CDN) -->
+  <script src="vendor/phaser.min.js"></script>
+  <!-- Punto de entrada (ES Modules) -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
