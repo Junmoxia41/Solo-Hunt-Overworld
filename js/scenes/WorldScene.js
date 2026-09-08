@@ -35,7 +35,8 @@ export class WorldScene extends Phaser.Scene {
       Save.data.x = s.x; Save.data.y = s.y; Save.data.spawnOk = true; Save.write();
     }
     this.player = this.add.container(Save.data.x, Save.data.y).setDepth(10); // SIEMPRE sobre el suelo
-    this.sombra = this.add.image(0, 18, 'shadow');
+    // Sombra pegada a la SUELO (pies del sprite ≈ +29px del centro del token)
+    this.sombra = this.add.image(0, 27, 'shadow').setDisplaySize(56, 15);
     this.player.add(this.sombra);
     this.tokenJugador = null;
     this._reconstruirTokenJugador();

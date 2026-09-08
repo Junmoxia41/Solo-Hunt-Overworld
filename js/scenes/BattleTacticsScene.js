@@ -137,7 +137,7 @@ export class BattleTacticsScene extends Phaser.Scene {
   _crearUnidadVisual(u) {
     const { x, y } = this._cellXY(u.cx, u.cy);
     u.cont = this.add.container(x, y).setDepth(100 + u.cy);
-    u.sombra = this.add.image(0, this.TS * 0.32, 'shadow').setDisplaySize(this.TS * 0.7, this.TS * 0.22);
+    u.sombra = this.add.image(0, this.TS * 0.5, 'shadow').setDisplaySize(this.TS * 0.72, this.TS * 0.2);
 
     if (u.bando === 'aliado') {
       u.cuerpo = tokenPersonaje(this, u.char, this.TS * 1.15);
@@ -149,9 +149,9 @@ export class BattleTacticsScene extends Phaser.Scene {
     // Bobbing idle
     this.tweens.add({ targets: u.cuerpo, y: -3, duration: 800 + this.rng() * 300, yoyo: true, repeat: -1, ease: 'Sine.inOut' });
 
-    // Barra de vida
-    u.barBg = this.add.image(0, -this.TS * 0.55, 'bar').setDisplaySize(this.TS - 10, 6).setTint(0x111827);
-    u.barFill = this.add.image(-(this.TS - 10) / 2, -this.TS * 0.55, 'bar').setOrigin(0, 0.5).setDisplaySize(this.TS - 10, 6)
+    // Barra de vida (por encima de la cabeza, sin tapar el sprite)
+    u.barBg = this.add.image(0, -this.TS * 0.68, 'bar').setDisplaySize(this.TS - 10, 6).setTint(0x111827);
+    u.barFill = this.add.image(-(this.TS - 10) / 2, -this.TS * 0.68, 'bar').setOrigin(0, 0.5).setDisplaySize(this.TS - 10, 6)
       .setTint(u.bando === 'aliado' ? 0x22c55e : 0xef4444);
 
     u.cont.add([u.sombra, u.cuerpo, u.barBg, u.barFill]);

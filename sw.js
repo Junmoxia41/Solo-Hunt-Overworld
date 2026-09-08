@@ -3,7 +3,7 @@
    Estrategia: Cache-First estricta (offline instantáneo).
    Las actualizaciones se despliegan subiendo CACHE_VERSION.
    ========================================================= */
-const CACHE_VERSION = 'solo-hunt-0.2.3';
+const CACHE_VERSION = 'solo-hunt-0.2.4';
 
 // Núcleo: imprescindible para arrancar (falla la instalación si falta alguno)
 const NUCLEO = [
