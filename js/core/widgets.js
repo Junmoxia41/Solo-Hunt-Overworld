@@ -20,6 +20,9 @@ export function tokenPersonaje(scene, char, size = 56) {
     const esc = size / Math.max(img.width, img.height);
     img.setScale(esc);
     c.add(img);
+    // Referencia directa al sprite para poder girarlo con flipX
+    // (NUNCA usar scaleX negativo sobre contenedores: rompe el culling)
+    c.spriteImage = img;
   } else {
     const bg = scene.add.image(0, 0, 'circ').setTint(char.color).setDisplaySize(size, size);
     const ini = scene.add.text(0, 0, char.nombre[0], {

@@ -107,9 +107,13 @@ export class WorldScene extends Phaser.Scene {
     const m = Math.hypot(vx, vy);
     if (m < 0.08) return false;
     if (m > 1) { vx /= m; vy /= m; }
-    if (Math.abs(vx) > 0.15) this.jugadorMirando = vx > 0 ? 1 : -1;
-    this.tokenJugador.scaleX = Phaser.Math.Linear(
-      this.tokenJugador.scaleX, this.jugadorMirando * Math.abs(this.tokenJugador.scaleX), 0.25);
+    // Giro del cazador: flipX sobre el sprite (un scaleX negativo sobre el
+    // contenedor rompe el culling de la cámara y lo deja invisible al andar)
+    if (Math.abs(vx) > 0.15) {
+      this.jugadorMirando = vx > 0 ? 1 : -1;
+      const spr = this.tokenJugador && this.tokenJugador.spriteImage;
+      if (spr) spr.setFlipX(this.jugadorMirando < 0);
+    }
 
     const vel = 150; // px/s
     const nx = this.player.x + vx * vel * dt, ny = this.player.y + vy * vel * dt;
