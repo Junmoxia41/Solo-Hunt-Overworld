@@ -1,0 +1,148 @@
+/* ============================================================
+   SOLO HUNT OVERWORLD v2 — CSS global
+   ============================================================ */
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('assets/fonts/pressstart2p.woff2') format('woff2');
+  font-display: swap;
+}
+
+:root {
+  --bg: #0a0a1a;
+  --gold: #ffd700;
+  --hp: #e74c3c;
+  --mp: #3498db;
+  --exp: #f1c40f;
+  --txt: #ecf0f1;
+  --purple: #9b59b6;
+  --green: #2ecc71;
+  --panel: rgba(10, 10, 26, 0.92);
+}
+
+/* ---------- Reset ---------- */
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+body { position: fixed; inset: 0; font-family: 'Press Start 2P', monospace; color: var(--txt);
+       user-select: none; -webkit-user-select: none; overscroll-behavior: none; }
+
+#gameCanvas { display: block; width: 100vw; height: 100vh; touch-action: none; image-rendering: pixelated; }
+
+#ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+#ui-layer > * { pointer-events: none; }
+
+/* ---------- Overlays con blur ---------- */
+.menu-overlay {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px;
+  background: rgba(5, 5, 15, 0.82); backdrop-filter: blur(6px);
+  pointer-events: auto !important; animation: fadeIn .3s ease-out;
+}
+
+/* ---------- Botones RPG ---------- */
+.rpg-btn {
+  font-family: inherit; font-size: 12px; color: var(--gold);
+  background: rgba(20, 20, 40, 0.9); border: 2px solid var(--gold);
+  padding: 12px 26px; min-width: 240px; cursor: pointer; letter-spacing: 1px;
+  text-transform: uppercase; transition: all .15s; pointer-events: auto;
+}
+.rpg-btn:hover { box-shadow: 0 0 18px rgba(255, 215, 0, 0.55); transform: scale(1.04); }
+.rpg-btn:active { transform: scale(.96); }
+.rpg-btn:disabled { opacity: .35; cursor: default; box-shadow: none; }
+.rpg-btn.small { min-width: 0; padding: 8px 14px; font-size: 9px; }
+.rpg-btn.purple { border-color: var(--purple); color: #d7b6ff; }
+.rpg-btn.green  { border-color: var(--green);  color: #b9ffce; }
+
+/* ---------- Paneles RPG ---------- */
+.rpg-panel { background: var(--panel); border: 2px solid var(--gold); padding: 18px 22px;
+             max-width: min(92vw, 520px); animation: slideUp .25s ease-out; }
+.rpg-panel h2 { color: var(--gold); font-size: 16px; margin-bottom: 14px; text-align: center; }
+.rpg-panel h3 { color: var(--purple); font-size: 11px; margin: 10px 0 6px; }
+.rpg-panel p { font-size: 9px; line-height: 1.8; color: var(--txt); }
+
+/* ---------- Barras (clases base; el HUD principal se dibuja en canvas) ---------- */
+.hp-bar  { height: 10px; background: #331313; border: 1px solid #000; }
+.hp-bar > div  { height: 100%; background: var(--hp); }
+.mp-bar  { height: 10px; background: #0e1c33; border: 1px solid #000; }
+.mp-bar > div  { height: 100%; background: var(--mp); }
+.exp-bar { height: 5px; background: #332b0e; border: 1px solid #000; }
+.exp-bar > div { height: 100%; background: var(--exp); }
+
+/* ---------- Inventario ---------- */
+.inv-grid { display: grid; grid-template-columns: repeat(5, 52px); gap: 6px; justify-content: center; }
+.inv-slot { width: 52px; height: 52px; background: rgba(255,255,255,.04); border: 2px solid #444;
+            display: flex; align-items: center; justify-content: center; position: relative;
+            cursor: pointer; pointer-events: auto; font-size: 22px; }
+.inv-slot:hover { border-color: var(--gold); }
+.inv-slot .qty { position: absolute; bottom: 1px; right: 3px; font-size: 8px; color: var(--txt); }
+.inv-slot.equipped-slot { border-color: var(--purple); }
+.rar-common    { border-color: #ffffff !important; }
+.rar-uncommon  { border-color: var(--green) !important; }
+.rar-rare      { border-color: var(--mp) !important; }
+.rar-epic      { border-color: var(--purple) !important; }
+.rar-legendary { border-color: var(--gold) !important; box-shadow: 0 0 10px rgba(255,215,0,.4); }
+
+.tooltip { position: fixed; z-index: 60; background: var(--panel); border: 1px solid var(--gold);
+           padding: 10px 12px; font-size: 8px; line-height: 1.7; max-width: 230px;
+           pointer-events: none; animation: fadeIn .12s; }
+
+/* ---------- Diálogo ---------- */
+#dialogue-box {
+  position: absolute; left: 10%; right: 10%; bottom: 26px; min-height: 130px;
+  background: var(--panel); border: 2px solid var(--gold); padding: 14px 16px;
+  pointer-events: auto !important; animation: slideUp .2s; z-index: 30;
+}
+#dialogue-box .npc-name { color: var(--gold); font-size: 11px; margin-bottom: 10px; }
+#dialogue-box .dlg-text { font-size: 9px; line-height: 2; min-height: 54px; white-space: pre-wrap; }
+#dialogue-box .dlg-next { position: absolute; bottom: 8px; right: 14px; color: var(--gold);
+                          font-size: 14px; animation: pulse 1s infinite; }
+
+/* ---------- Minijuego Arise ---------- */
+#extract-box { position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+               background: var(--panel); border: 2px solid var(--purple); padding: 18px 22px;
+               pointer-events: auto !important; z-index: 40; text-align: center; width: min(90vw, 380px); }
+#extract-box h2 { color: var(--purple); font-size: 14px; margin-bottom: 12px; animation: pulse 1.2s infinite; }
+.extract-track { position: relative; height: 26px; background: #111; border: 1px solid #555; margin: 12px 0; }
+.extract-zone  { position: absolute; top: 0; bottom: 0; background: rgba(46,204,113,.45);
+                 border: 1px solid var(--green); }
+.extract-cursor { position: absolute; top: -4px; bottom: -4px; width: 4px; background: #fff;
+                  box-shadow: 0 0 8px #fff; }
+#extract-box p { font-size: 8px; color: #b9b9d0; }
+
+/* ---------- Toasts ---------- */
+#toasts { position: absolute; top: 74px; left: 50%; transform: translateX(-50%);
+          display: flex; flex-direction: column; gap: 6px; align-items: center; z-index: 25; }
+.toast { background: var(--panel); border: 1px solid var(--txt); padding: 8px 16px;
+         font-size: 8px; animation: slideUp .2s ease-out; white-space: nowrap; }
+.toast.out { transition: opacity .5s; opacity: 0; }
+
+/* ---------- Menú título ---------- */
+.title-logo { font-size: clamp(26px, 7vw, 52px); color: var(--gold); letter-spacing: 4px;
+              text-shadow: 0 0 24px rgba(155, 89, 182, .8), 0 4px 0 #4a2a7a; animation: pulse 3s infinite; }
+.title-sub  { font-size: clamp(12px, 3vw, 22px); color: var(--purple); letter-spacing: 10px; margin: 4px 0 26px; }
+.title-ver  { position: absolute; bottom: 10px; right: 14px; font-size: 8px; color: #555; }
+
+/* ---------- Level up / stats ---------- */
+.stat-row { display: flex; align-items: center; justify-content: space-between; width: 300px;
+            max-width: 80vw; font-size: 10px; margin: 7px auto; }
+.stat-row b { color: var(--txt); }
+.stat-row .desc { font-size: 7px; color: #888; width: 130px; text-align: left; line-height: 1.4; }
+
+/* ---------- Game over ---------- */
+.glitch-txt { color: var(--hp); font-size: clamp(22px, 6vw, 44px); position: relative; animation: glitch 2.4s infinite; }
+
+/* ---------- Botones táctiles ---------- */
+.touch-btn { position: absolute; width: 62px; height: 62px; border-radius: 50%;
+             display: flex; align-items: center; justify-content: center;
+             font-size: 9px; color: #fff; pointer-events: auto !important;
+             background: rgba(255,255,255,.07); border: 2px solid rgba(255,255,255,.25); z-index: 20; }
+.touch-btn:active { background: rgba(255,255,255,.25); }
+
+/* ---------- Animaciones ---------- */
+@keyframes pulse   { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .75; transform: scale(1.04);} }
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(18px);} to { opacity: 1; transform: translateY(0);} }
+@keyframes glitch  {
+  0%, 91%, 94%, 98%, 100% { transform: translate(0); text-shadow: 3px 0 #3498db, -3px 0 #e74c3c; }
+  92% { transform: translate(-4px, 2px); text-shadow: -4px 0 #3498db, 4px 0 #e74c3c; }
+  96% { transform: translate(4px, -2px); text-shadow: 4px 0 #3498db, -4px 0 #e74c3c; }
+}

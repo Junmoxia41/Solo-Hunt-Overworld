@@ -1,0 +1,10 @@
+[
+  {
+    "id": "primeros_colmillos",
+    "nombre": "Primeros colmillos",
+    "descripcion": "El Guía del Gremio quiere pruebas: caza 5 lobos sombríos del bosque.",
+    "tipo": "lobo",
+    "objetivo": 5,
+    "recompensa": { "exp": 100, "oro": 50 }
+  }
+]

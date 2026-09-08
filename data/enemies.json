@@ -1,0 +1,55 @@
+{
+  "lobo": {
+    "nombre": "Lobo Sombrío", "emoji": "🐺", "color": "#5b6070",
+    "hp": 34, "atk": 7, "def": 1, "speed": 150,
+    "detectionRange": 210, "attackRange": 36, "attackCooldown": 0.85,
+    "exp": 18, "gold": [3, 8],
+    "drops": [
+      { "itemId": "wolf_fang", "chance": 0.35, "cantidad": 1 },
+      { "itemId": "hp_potion", "chance": 0.10, "cantidad": 1 }
+    ]
+  },
+  "murcielago": {
+    "nombre": "Murciélago Ciego", "emoji": "🦇", "color": "#3b3f6b",
+    "hp": 22, "atk": 5, "def": 0, "speed": 130,
+    "detectionRange": 300, "attackRange": 34, "attackCooldown": 1.1,
+    "exp": 14, "gold": [2, 6],
+    "drops": [
+      { "itemId": "bat_wing", "chance": 0.3, "cantidad": 1 },
+      { "itemId": "mp_potion", "chance": 0.08, "cantidad": 1 }
+    ]
+  },
+  "nomuerto": {
+    "nombre": "No-Muerto", "emoji": "🧟", "color": "#4a5a4a",
+    "hp": 95, "atk": 13, "def": 3, "speed": 58,
+    "inmuneStun": true,
+    "detectionRange": 170, "attackRange": 42, "attackCooldown": 1.8,
+    "exp": 32, "gold": [8, 15],
+    "drops": [
+      { "itemId": "bone", "chance": 0.4, "cantidad": 1 },
+      { "itemId": "leather_armor", "chance": 0.06, "cantidad": 1 }
+    ]
+  },
+  "duende": {
+    "nombre": "Duende Arquero", "emoji": "👺", "color": "#6b5a2a",
+    "hp": 30, "atk": 9, "def": 1, "speed": 92,
+    "escapa": true, "distanciaSegura": 90,
+    "detectionRange": 240, "attackRange": 200, "attackCooldown": 2.0,
+    "exp": 26, "gold": [6, 14],
+    "drops": [
+      { "itemId": "rusty_sword", "chance": 0.08, "cantidad": 1 },
+      { "itemId": "hp_potion", "chance": 0.12, "cantidad": 2 }
+    ]
+  },
+  "mago": {
+    "nombre": "Mago Oscuro", "emoji": "🧙", "color": "#4a1a6b",
+    "hp": 44, "atk": 14, "def": 1, "speed": 72,
+    "detectionRange": 230, "attackRange": 180, "attackCooldown": 2.6,
+    "exp": 40, "gold": [12, 25],
+    "drops": [
+      { "itemId": "shadow_blade", "chance": 0.03, "cantidad": 1 },
+      { "itemId": "mp_potion", "chance": 0.25, "cantidad": 2 },
+      { "itemId": "elixir", "chance": 0.02, "cantidad": 1 }
+    ]
+  }
+}
