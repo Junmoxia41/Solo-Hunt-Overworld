@@ -33,9 +33,17 @@ guardado en **localStorage** (`soloHuntSaveV2`), módulos ES6, `requestAnimation
 - Juice: hitlag, screen shake, números de daño, parpadeo de i-frames.
 - HUD en canvas: barras, hotbar con enfriamientos, minimapa en vivo, combo.
 
-## 🗺️ Milestone 2 (siguiente)
-Mazmorras procedurales por portal (ranks E→S), jefes con 3 fases,
-temporizadores y pantalla de resultados.
+## 🗺️ Milestone 2 — Mazmorras y jefes
+- 4 portales (E/D/C/S) → mazmorras procedurales de 3-7 pisos con salas+pasillos,
+  temporizador por rango y portal de salida al limpiar.
+- 5 jefes de 3 fases (esbirros, anillos de proyectiles, enrage) con barra grande.
+- Resultados con EXP ×2, oro de rango y bonus de tiempo; castigo al fallar.
+
+## 🛒 Milestone 3 — Economía y PWA
+- Mercader Krow con tienda completa (comprar ×3 / vender al valor de ficha).
+- Selector de cazador con los 12 personajes chibi (se guarda en la partida).
+- **PWA instalable y 100% offline**: manifiesto + Service Worker con precache total,
+  iconos kaito 192/512/maskable. Se instala como app nativa en móvil y escritorio.
 
 ## 🔧 Desarrollo
 ```bash

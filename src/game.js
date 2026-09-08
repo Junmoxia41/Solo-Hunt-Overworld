@@ -93,7 +93,10 @@ export class Game {
     this.dialogue = new DialogueManager(this);
     this.player = new Player(this, 40 * 32, 40 * 32);
     this.player.recalculateStats(); // aplica bonos de equipo si los hubiera
-    this.npcs = [new NPC(this, 38 * 32, 37 * 32, 'guia_gremio')];
+    this.npcs = [
+      new NPC(this, 38 * 32, 37 * 32, 'guia_gremio'),
+      new NPC(this, 42 * 32, 38 * 32, 'mercader')
+    ];
 
     // Partida guardada (restaura jugador, sombras y misión)
     this.saveInfo = SaveManager.load(this);
@@ -189,7 +192,7 @@ export class Game {
     ctx.restore();
 
     // HUD por encima del mundo (también durante diálogos y paneles congelados)
-    if (['PLAYING', 'PAUSED', 'DIALOGUE', 'PORTAL', 'DUNGEON_END', 'EXTRACT'].includes(this.state)) {
+    if (['PLAYING', 'PAUSED', 'DIALOGUE', 'PORTAL', 'DUNGEON_END', 'EXTRACT', 'SHOP'].includes(this.state)) {
       this.ui.renderHUD(ctx);
     }
   }
@@ -198,7 +201,7 @@ export class Game {
   changeState(newState) {
     this.state = newState;
     this.ui.onStateChange(newState);
-    if (['PAUSED', 'PORTAL', 'DUNGEON_END', 'LEVEL_UP', 'GAME_OVER'].includes(newState)) this.audio.duck(true);
+    if (['PAUSED', 'PORTAL', 'DUNGEON_END', 'LEVEL_UP', 'GAME_OVER', 'SHOP'].includes(newState)) this.audio.duck(true);
     else this.audio.duck(false);
   }
 

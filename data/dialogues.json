@@ -7,5 +7,14 @@
       "Usa Z o toca ATK para golpear. X es tu golpe pesado. ⇧/DSH para esquivar, y C/C con PM libera tu Shadow Strike.",
       "Cuando un cadáver brille en morado, extráelo con [E]: algunas almas aceptan servir a un Elegido. Eso es… ARISE."
     ]
+  },
+  "mercader": {
+    "nombre": "Mercader Krow",
+    "emoji": "🧑‍💼",
+    "lineas": [
+      "Equipo nuevo, pociones frescas… y compro todo lo que arrastres del bosque. Sin preguntas, cazador.",
+      "Recuerda: un cazador que no se equipa, vuelve a casa en un saco. ¿Qué será hoy?"
+    ]
   }
 }
+

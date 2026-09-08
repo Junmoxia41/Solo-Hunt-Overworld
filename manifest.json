@@ -1,0 +1,18 @@
+{
+  "name": "Solo Hunt: Overworld",
+  "short_name": "Solo Hunt",
+  "description": "Action RPG 2D — caza, sube de nivel y levanta tu ejército de sombras. ¡ARISE!",
+  "id": "/",
+  "start_url": "./index.html",
+  "scope": "./",
+  "lang": "es",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0a0a1a",
+  "background_color": "#0a0a1a",
+  "icons": [
+    { "src": "assets/ui/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/ui/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/ui/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

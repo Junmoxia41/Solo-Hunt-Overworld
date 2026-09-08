@@ -36,6 +36,11 @@ export class NPC {
         this.lineasVivas = ['Has demostrado tu valía. Los portales Rango E te esperan, cazador.'];
       }
     }
+
+    // El Mercader abre su escaparate directamente
+    if (this.id === 'mercader') {
+      opcoes = [{ texto: '🛒 Comerciar (comprar / vender)', accion: () => g.ui.abrirTienda() }];
+    }
     g.dialogue.iniciar(this, this.lineasVivas || this.lineas, opcoes);
   }
 
@@ -54,11 +59,11 @@ export class NPC {
     ctx.beginPath(); ctx.arc(this.x + 16, this.y + 16 + bob, 15, 0, Math.PI * 2); ctx.stroke();
     ctx.font = '17px serif'; ctx.textAlign = 'center';
     ctx.fillText(this.emoji, this.x + 16, this.y + 22 + bob);
-    // indicador de interacción
+    // indicador de interacción (misión solo en el Guía)
     const q = this.game.quests;
     const marca = q && this.id === 'guia_gremio'
       ? (!q.aceptada || q.lista) && !q.completada ? '!' : (q.completada ? '✓' : '…')
-      : '!';
+      : (this.id === 'mercader' ? '💰' : '!');
     ctx.fillStyle = marca === '!' ? '#ffd700' : '#2ecc71';
     ctx.font = '11px "Press Start 2P", monospace';
     ctx.fillText(marca, this.x + 16, this.y - 12 + bob);

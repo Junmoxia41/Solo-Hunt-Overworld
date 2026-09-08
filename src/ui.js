@@ -5,7 +5,7 @@
    ============================================================ */
 import { COLORS, RARITY_COLORS, DASH_COOLDOWN, HEAVY_ATTACK_COOLDOWN, SKILL_COOLDOWN, SHADOW_MAX, SHADOW_EXTRACT_CD } from './constants.js';
 import { clamp, formatNumber } from './utils.js';
-import { ICONOS } from './item.js';
+import { ICONOS, crearItem } from './item.js';
 import { SaveManager } from './save.js';
 import { puedeExtraer } from './shadow.js';
 import { Dungeon, RANGOS } from './dungeon.js';
@@ -29,7 +29,7 @@ export class UI {
         else if (['PAUSED', 'INVENTORY'].includes(g.state)) g.changeState('PLAYING');
         else if (g.state === 'DIALOGUE') g.dialogue.cerrar();
         else if (g.state === 'EXTRACT') this.cancelarExtraccion();
-        else if (g.state === 'PORTAL') g.changeState('PLAYING');
+        else if (g.state === 'PORTAL' || g.state === 'SHOP') g.changeState('PLAYING');
       }
       if (e.code === 'KeyI') {
         if (g.state === 'PLAYING') g.changeState('INVENTORY');
@@ -91,6 +91,7 @@ export class UI {
       <div class="title-sub">OVERWORLD v2</div>
       <button class="rpg-btn" id="bt-continuar" ${info ? '' : 'disabled'}>▶ Continuar ${info ? `(Nv. ${info.level})` : ''}</button>
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
+      <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
       <div class="title-ver">v2.0.0 · M1 — Acción en tiempo real</div>`;
     o.querySelector('#bt-continuar').addEventListener('click', () => {
@@ -109,10 +110,113 @@ export class UI {
         this.toast('🌲 Zona: Bosque Inicial — busca al Guía del Gremio', '#2ecc71', 3600);
       }
     });
+    o.querySelector('#bt-cazador').addEventListener('click', () => {
+      this.game.audio.playSFX('menuMove');
+      this._selectorCazador();
+    });
     o.querySelector('#bt-creditos').addEventListener('click', () => {
       this.game.audio.playSFX('menuMove');
       this.toast('Hecho con ♥ por Junmoxia41 + Arena · Sprites IA originales · Motor: Canvas 2D vanilla', '#9b59b6', 4200);
     });
+  }
+
+  /* ==================== Tienda del Mercader Krow ==================== */
+  abrirTienda() {
+    this.game.changeState('SHOP');
+    this._pintarTienda();
+  }
+
+  _pintarTienda() {
+    const g = this.game, inv = g.inventory;
+    const CATALOGO = ['hp_potion', 'mp_potion', 'rusty_sword', 'leather_armor', 'iron_sword', 'elixir'];
+    const o = this._nuevoOverlay();
+    o.innerHTML = `
+      <div class="rpg-panel" style="max-height:88vh;overflow:auto;min-width:min(92vw,480px)">
+        <h2>🛒 MERCADER KROW</h2>
+        <p style="text-align:center;color:#ffd700">Oro: <b>${formatNumber(g.player.gold)}</b> 💰</p>
+        <h3>Comprar</h3>
+        <div id="shop-buy"></div>
+        <h3>Vender (toca tus objetos)</h3>
+        <div id="shop-sell"></div>
+        <button class="rpg-btn small" id="bt-end" style="display:block;margin:14px auto 0">CERRAR TIENDA (ESC)</button>
+      </div>`;
+
+    // — Comprar — (precio = valor de venta × 3)
+    const cont = o.querySelector('#shop-buy');
+    for (const id of CATALOGO) {
+      const proto = g.data.items.find(i => i.id === id);
+      if (!proto) continue;
+      const precio = Math.max(8, Math.ceil(proto.sellPrice * 3));
+      const fila = document.createElement('div');
+      fila.className = 'shop-row';
+      const statsTxt = Object.entries(proto.stats || {}).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' · ');
+      fila.innerHTML = `
+        <span>${ICONOS[proto.type] || '❓'} <b style="color:${RARITY_COLORS[proto.rarity]}">${proto.name}</b><br>
+        <small style="color:#888">${statsTxt}</small></span>
+        <button class="rpg-btn small" ${g.player.gold < precio ? 'disabled' : ''}>💰 ${precio}</button>`;
+      fila.querySelector('button').onclick = () => {
+        if (g.player.gold < precio) return;
+        g.player.gold -= precio;
+        inv.addItem(crearItem(g, id), 1);
+        g.audio.playSFX('coin');
+        this.toast(`🛒 Compraste: ${proto.name}`, '#2ecc71');
+        this._pintarTienda();
+      };
+      cont.appendChild(fila);
+    }
+
+    // — Vender —
+    const vend = o.querySelector('#shop-sell');
+    const vendibles = inv.slots.map((s, i) => ({ s, i })).filter(x => x.s);
+    if (!vendibles.length) vend.innerHTML = '<p style="color:#666">Tu mochila está vacía… caza algo y vuelve.</p>';
+    for (const { s, i } of vendibles) {
+      const fila = document.createElement('div');
+      fila.className = 'shop-row';
+      fila.innerHTML = `
+        <span>${ICONOS[s.item.type]} ${s.item.name}${s.cantidad > 1 ? ' x' + s.cantidad : ''}</span>
+        <button class="rpg-btn small green">+${s.item.sellPrice} 💰</button>`;
+      fila.querySelector('button').onclick = () => {
+        inv.removeItem(i, 1);
+        g.player.gold += s.item.sellPrice;
+        g.audio.playSFX('coin');
+        this.toast(`+${s.item.sellPrice} oro por ${s.item.name}`, '#ffd700');
+        this._pintarTienda();
+      };
+      vend.appendChild(fila);
+    }
+    o.querySelector('#bt-end').onclick = () => g.changeState('PLAYING');
+  }
+
+  /* ==================== Selector de cazador ==================== */
+  _selectorCazador() {
+    const g = this.game;
+    const CHARS = ['kaito','rin','yuna','grom','sora','dante','mika','roku','elena','atlas','nix','hana'];
+    const o = this._nuevoOverlay();
+    o.innerHTML = `
+      <div class="rpg-panel" style="text-align:center;max-width:min(94vw,560px)">
+        <h2>ELIGE TU CAZADOR</h2>
+        <p style="margin-bottom:10px">El elegido se guarda al continuar la partida</p>
+        <div id="cgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+        <button class="rpg-btn small" id="bt-back-menu" style="margin-top:14px">VOLVER</button>
+      </div>`;
+    const grid = o.querySelector('#cgrid');
+    for (const c of CHARS) {
+      const img = g.assets['char_' + c];
+      const cel = document.createElement('div');
+      cel.className = 'char-cell' + (g.player.charId === c ? ' sel' : '');
+      cel.innerHTML = img
+        ? `<img src="${img.src}" alt="${c}"><span>${c.toUpperCase()}</span>`
+        : `<span style="font-size:22px">🧝</span><span>${c.toUpperCase()}</span>`;
+      cel.addEventListener('pointerdown', () => {
+        g.player.charId = c;
+        g.audio.playSFX('menuOk');
+        this.toast(`🧝 Ahora cazas como ${c.toUpperCase()}`, '#9b59b6');
+        if (SaveManager.hasSave()) SaveManager.save(g);
+        this._menu();
+      });
+      grid.appendChild(cel);
+    }
+    o.querySelector('#bt-back-menu').onclick = () => this._menu();
   }
 
   /* ---------- Pausa ---------- */
@@ -436,6 +540,7 @@ export class UI {
     if (!this.game.input.isMobile) return;
     const defs = [
       { accion: 'atk',   txt: 'ATK', css: '#e74c3c', right: 18,  bottom: 96 },
+      { accion: 'heavy', txt: 'HVY', css: '#f1c40f', right: 18,  bottom: 170 },
       { accion: 'skill', txt: 'SKL', css: '#9b59b6', right: 92,  bottom: 28 },
       { accion: 'dash',  txt: 'DSH', css: '#3498db', right: 18,  bottom: 28 },
       { accion: 'int',   txt: 'INT', css: '#2ecc71', right: 92,  bottom: 96 }
