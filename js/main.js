@@ -16,7 +16,7 @@ const config = {
   backgroundColor: '#050816',
   pixelArt: false,
   roundPixels: true,                 // menos aliasing en movimiento de sprites
-  input: { activePointers: 2 },      // joystick + botones simultáneos en móvil
+  input: { activePointers: 3 },      // ratón/táctil + 2 dedos para la pinza de zoom
   scale: {
     mode: Phaser.Scale.RESIZE,       // el canvas ocupa siempre toda la pantalla
     width: window.innerWidth,

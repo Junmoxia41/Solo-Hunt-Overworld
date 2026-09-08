@@ -54,7 +54,7 @@ export class UIScene extends Phaser.Scene {
   _buildHud() {
     this.hud = this.add.container(0, 0).setDepth(500);
 
-    this.chipJugador = this.add.image(0, 0, 'panel').setDisplaySize(210, 74);
+    this.chipJugador = this.add.image(0, 0, 'panel').setDisplaySize(226, 86);
     this.avatar = this.add.container(0, 0);
     this.txtNombre = this.add.text(0, 0, '—', { fontFamily: FONT, fontSize: '14px', fontStyle: '800', color: '#e7ecff' });
     this.txtNivel  = this.add.text(0, 0, '',   { fontFamily: FONT, fontSize: '11px', color: '#8f9bbd' });
@@ -74,7 +74,11 @@ export class UIScene extends Phaser.Scene {
 
   _reconstruirAvatar() {
     this.avatar.removeAll(true);
-    this.avatar.add(tokenPersonaje(this, getPersonaje(Save.data.charId || 'kaito'), 46));
+    const c = getPersonaje(Save.data.charId || 'kaito');
+    // Círculo de rol + aro: el sprite del cazador siempre resalta en el HUD
+    this.avatar.add(this.add.image(0, 0, 'circ').setTint(0x0e1425).setDisplaySize(54, 54));
+    this.avatar.add(tokenPersonaje(this, c, 50));
+    this.avatar.add(this.add.image(0, 0, 'ring').setTint(c.color).setDisplaySize(60, 60));
   }
 
   _pintarHud() {
@@ -89,15 +93,24 @@ export class UIScene extends Phaser.Scene {
 
   /* ================= BOTONES SUPERIORES ================= */
   _buildBotones() {
-    const mk = (txt, cb) => {
-      const b = crearBoton(this, 0, 0, { texto: txt, ancho: 108, alto: 34, fontSize: 12, onTap: cb });
-      this.hud.add(b); return b;
+    // Botones con ancho automático según el texto (nunca se cortan ni se solapan)
+    const mk = (txt, cb, alto = 34) => {
+      const b = crearBoton(this, 0, 0, { texto: txt, ancho: 108, alto, fontSize: 12, onTap: cb });
+      const w = Math.max(88, b.label.width + 26);
+      b.fondo.setDisplaySize(w, alto);
+      b.setSize(w, alto);
+      b.anchoReal = w;
+      this.hud.add(b);
+      return b;
     };
     this.btnGps     = mk('📍 Mi zona', () => this._sincronizarGps());
     this.btnArena   = mk('⚔️ Arena', () => this._modalArena());
     this.btnRoster  = mk('👥 Cazadores', () => this._modalRoster(false));
     this.btnInstall = mk('⬇️ Instalar', () => this._instalar());
     this.btnInstall.setVisible(!!window.__installEvt);
+    // Zoom manual — alternativa a la pinza (táctil) y la rueda (PC)
+    this.btnZoomMas   = mk('➕', () => this.game.events.emit('zoom:delta', 0.2), 42);
+    this.btnZoomMenos = mk('➖', () => this.game.events.emit('zoom:delta', -0.2), 42);
   }
 
   _sincronizarGps() {
@@ -244,7 +257,7 @@ export class UIScene extends Phaser.Scene {
       card.on('pointerdown', () => {
         Save.setCazador(p.id);
         this.game.events.emit('char:changed');
-        this.toast(`✨ ${p.nombre} (${p.rol}) se une a tu aventura`);
+        this.toast(`✨ ${p.nombre} se une a tu aventura — Pellizca la pantalla o usa ➕➖ para el zoom`, 3400);
         this._cerrarModal();
       });
       capa.add(card);
@@ -311,24 +324,29 @@ export class UIScene extends Phaser.Scene {
     const sx = this.safe.left, sy = this.safe.top;
 
     // Chip de jugador (arriba-izquierda)
-    this.chipJugador.setPosition(sx + 12 + 105, sy + 12 + 37);
-    this.avatar.setPosition(sx + 12 + 30, sy + 12 + 37);
-    this.txtNombre.setPosition(sx + 12 + 58, sy + 12 + 12);
-    this.txtNivel.setPosition(sx + 12 + 58, sy + 12 + 30);
-    this.barXpBg.setPosition(sx + 12 + 58, sy + 12 + 48);
-    this.barXp.setPosition(sx + 12 + 58, sy + 12 + 48);
-    this.txtHp.setPosition(sx + 12 + 58, sy + 12 + 57);
+    this.chipJugador.setPosition(sx + 12 + 113, sy + 12 + 43);
+    this.avatar.setPosition(sx + 12 + 36, sy + 12 + 43);
+    this.txtNombre.setPosition(sx + 12 + 68, sy + 12 + 16);
+    this.txtNivel.setPosition(sx + 12 + 68, sy + 12 + 34);
+    this.barXpBg.setPosition(sx + 12 + 68, sy + 12 + 54);
+    this.barXp.setPosition(sx + 12 + 68, sy + 12 + 54);
+    this.txtHp.setPosition(sx + 12 + 68, sy + 12 + 66);
 
     // Chip de oro
-    this.chipOroBg.setPosition(sx + 12 + 55, sy + 12 + 74 + 16);
-    this.txtOro.setPosition(sx + 12 + 55, sy + 12 + 74 + 16);
+    this.chipOroBg.setPosition(sx + 12 + 55, sy + 12 + 86 + 18);
+    this.txtOro.setPosition(sx + 12 + 55, sy + 12 + 86 + 18);
 
-    // Botones (columna arriba-derecha)
-    const bx = W - this.safe.right - 12 - 54;
-    this.btnGps.setPosition(bx, sy + 12 + 17);
-    this.btnArena.setPosition(bx, sy + 12 + 17 + 42);
-    this.btnRoster.setPosition(bx, sy + 12 + 17 + 84);
-    this.btnInstall.setPosition(bx, sy + 12 + 17 + 126);
+    // Botones (columna arriba-derecha, alineados por el borde derecho real)
+    const borde = W - this.safe.right - 10;
+    let by = sy + 12 + 17;
+    for (const b of [this.btnGps, this.btnArena, this.btnRoster, this.btnInstall]) {
+      b.setPosition(borde - (b.anchoReal || 108) / 2, by);
+      by += 40;
+    }
+
+    // Zoom manual (lateral derecho, zona media-baja; la pinza/rueda también funcionan)
+    this.btnZoomMas.setPosition(W - this.safe.right - 34, H - this.safe.bottom - 190);
+    this.btnZoomMenos.setPosition(W - this.safe.right - 34, H - this.safe.bottom - 140);
 
     // Joystick (abajo-izquierda)
     this.joyBase.setPosition(sx + 88, H - this.safe.bottom - 100);

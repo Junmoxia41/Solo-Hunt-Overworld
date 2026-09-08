@@ -17,6 +17,7 @@ const defaults = () => ({
   xp: 0,
   nivel: 1,
   hp: null,            // null => se inicializa a maxHp
+  zoom: null,          // zoom de cámara elegido por el jugador (null = auto)
   derrotados: {},      // { "seed|cx,cy": 1 } portales conquistados
   arena: { poder: 0, ultimaSync: null } // Fase 5: snapshot para ranking online
 });

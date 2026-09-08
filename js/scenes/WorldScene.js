@@ -34,16 +34,17 @@ export class WorldScene extends Phaser.Scene {
       const s = buscarSpawn();
       Save.data.x = s.x; Save.data.y = s.y; Save.data.spawnOk = true; Save.write();
     }
-    this.player = this.add.container(Save.data.x, Save.data.y);
+    this.player = this.add.container(Save.data.x, Save.data.y).setDepth(10); // SIEMPRE sobre el suelo
     this.sombra = this.add.image(0, 18, 'shadow');
     this.player.add(this.sombra);
     this.tokenJugador = null;
     this._reconstruirTokenJugador();
     this.jugadorMirando = 1;
 
-    /* ---------- Cámara con seguimiento suave ---------- */
+    /* ---------- Cámara con seguimiento suave + zoom ---------- */
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12);
     this.cameras.main.setBackgroundColor('#050816');
+    this._setupZoom();
 
     /* ---------- Entrada: teclado (joystick llega por registry) ---------- */
     this.teclas = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT');
@@ -123,17 +124,19 @@ export class WorldScene extends Phaser.Scene {
      ============================================================ */
   _refrescarTiles(force = false) {
     const cam = this.cameras.main;
-    const w = this.scale.width, h = this.scale.height;
-    const x0 = Math.floor(cam.scrollX / TILE) - 1, y0 = Math.floor(cam.scrollY / TILE) - 1;
-    const cols = Math.ceil(w / TILE) + 2, rows = Math.ceil(h / TILE) + 2;
+    // worldView tiene en cuenta el zoom de la cámara (área visible en coords de mundo)
+    const view = cam.worldView;
+    const x0 = Math.floor(view.x / TILE) - 1, y0 = Math.floor(view.y / TILE) - 1;
+    const cols = Math.ceil(view.width / TILE) + 2, rows = Math.ceil(view.height / TILE) + 2;
     const key = `${x0},${y0},${cols}x${rows}`;
     if (!force && key === this._rk) return;
     this._rk = key;
 
     const total = cols * rows;
     while (this.tilePool.length < total) {
-      const base = this.add.image(0, 0, 'tile_pradera');
-      const deco = this.add.image(0, 0, 'deco_tree');
+      // Profundidades negativas: el suelo NUNCA tapa a jugadores/portales/NPCs
+      const base = this.add.image(0, 0, 'tile_pradera').setDepth(-10);
+      const deco = this.add.image(0, 0, 'deco_tree').setDepth(-9);
       this.tilePool.push({ base, deco });
     }
 
@@ -188,7 +191,7 @@ export class WorldScene extends Phaser.Scene {
 
   _crearPortalVisual(p, ck) {
     const info = RANGOS[p.rango];
-    const cont = this.add.container(p.x, p.y);
+    const cont = this.add.container(p.x, p.y).setDepth(4);
     const bloq = esPremium(p.rango) && !desbloqueado(p.rango, Save.data.nivel);
 
     const glow = this.add.image(0, 0, 'glow').setTint(info.color).setScale(1.1);
@@ -210,7 +213,7 @@ export class WorldScene extends Phaser.Scene {
   }
 
   _crearNpcVisual(n, ck) {
-    const cont = this.add.container(n.x, n.y);
+    const cont = this.add.container(n.x, n.y).setDepth(5);
     const cuerpo = this.add.image(0, 0, 'circ').setTint(0x37415f).setDisplaySize(34, 34);
     const cara = this.add.text(0, -1, n.cara, { fontSize: '17px' }).setOrigin(0.5);
     // Bocadillo de diálogo (oculto hasta acercarse)
@@ -294,10 +297,50 @@ export class WorldScene extends Phaser.Scene {
   }
 
   /* ============================================================
+     ZOOM — pinza táctil, rueda de ratón y botones ➕➖ (UIScene)
+     ============================================================ */
+  _setupZoom() {
+    let z0 = Save.data.zoom;
+    if (!z0) { // zoom por defecto: más cercano en móvil (vertical) para lucir al personaje
+      const W = this.scale.width, H = this.scale.height;
+      z0 = W < H ? 1.5 : 1.15;
+    }
+    this.zoomActual = z0;
+    this.cameras.main.setZoom(z0);
+    this._pinch = null;
+    this.input.on('wheel', (pointer, over, dx, dy) => {
+      this._setZoom(this.zoomActual - Math.sign(dy) * 0.15);
+    });
+    this.game.events.on('zoom:delta', this._onZoomDelta, this);
+  }
+
+  _onZoomDelta(d) { this._setZoom(this.zoomActual + d); }
+
+  _setZoom(z) {
+    this.zoomActual = Phaser.Math.Clamp(z, 0.6, 2.6);
+    this.cameras.main.setZoom(this.zoomActual);
+    Save.data.zoom = this.zoomActual;
+  }
+
+  /** Pinza con dos dedos (se evalúa en cada frame del overworld) */
+  _gestionarPinza() {
+    const p1 = this.input.pointer1, p2 = this.input.pointer2;
+    if (p1 && p2 && p1.isDown && p2.isDown) {
+      const d = Phaser.Math.Distance.Between(p1.x, p1.y, p2.x, p2.y);
+      if (this._pinch) this._setZoom(this.zoomActual * (d / this._pinch));
+      this._pinch = d;
+    } else if (this._pinch) {
+      this._pinch = null;
+      Save.write(); // conservar el zoom elegido
+    }
+  }
+
+  /* ============================================================
      BUCLE
      ============================================================ */
   update(time, dtMs) {
     const dt = Math.min(0.05, dtMs / 1000);
+    this._gestionarPinza();
     if (Save.data.charId && !this._enBatalla) {
       if (this._moverJugador(dt)) {
         // deriva de posición para guardado (throttle natural del bucle)
