@@ -197,12 +197,12 @@ export class Enemy {
     const img = this.game.assets['mob_' + this.type];
     const bob = this.isDead ? 0 : Math.sin(this.animT * 7) * 2;
 
-    // Sombra en el suelo
+    // Sombra en el suelo (bien bajo los pies del sprite)
     ctx.save();
-    ctx.globalAlpha = this.isDead ? Math.max(0, 0.3 - this.deathTimer * 0.03) : 0.3;
+    ctx.globalAlpha = this.isDead ? Math.max(0, 0.3 - this.deathTimer * 0.03) : 0.32;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(this.x + 16, this.y + 30, 13, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(this.x + 16, this.y + 37, 13, 5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 

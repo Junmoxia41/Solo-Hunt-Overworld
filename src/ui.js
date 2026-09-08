@@ -29,15 +29,19 @@ export class UI {
         else if (['PAUSED', 'INVENTORY'].includes(g.state)) g.changeState('PLAYING');
         else if (g.state === 'DIALOGUE') g.dialogue.cerrar();
         else if (g.state === 'EXTRACT') this.cancelarExtraccion();
-        else if (g.state === 'PORTAL' || g.state === 'SHOP') g.changeState('PLAYING');
+        else if (g.state === 'PORTAL' || g.state === 'SHOP' || g.state === 'MAPVIEW') g.changeState('PLAYING');
       }
       if (e.code === 'KeyI') {
         if (g.state === 'PLAYING') g.changeState('INVENTORY');
         else if (g.state === 'INVENTORY') g.changeState('PLAYING');
       }
-      if (e.code === 'KeyM') {
+      if (e.code === 'KeyM') { // MAPA completo del mundo
+        if (g.state === 'PLAYING') g.changeState('MAPVIEW');
+        else if (g.state === 'MAPVIEW') g.changeState('PLAYING');
+      }
+      if (e.code === 'KeyN') { // silencio (mute)
         const m = g.audio.toggleMute();
-        this.toast(m ? '🔇 Audio silenciado (M)' : '🔊 Audio activado', '#888');
+        this.toast(m ? '🔇 Audio silenciado (N)' : '🔊 Audio activado', '#888');
       }
       if (e.code === 'KeyT' && g.shadows.length) { // cambiar rol de las sombras
         for (const s of g.shadows) s.role = s.role === 'attack' ? 'defend' : 'attack';
@@ -67,6 +71,52 @@ export class UI {
     else if (state === 'LEVEL_UP') this._levelUp();
     else if (state === 'GAME_OVER') this._gameOver();
     else if (state === 'INVENTORY') this._inventario();
+    else if (state === 'MAPVIEW') this._mapaGrande();
+  }
+
+  /* ---------- Mapa mundial a pantalla completa (tecla M) ---------- */
+  _mapaGrande() {
+    const g = this.game, m = g.currentMap;
+    const o = this._nuevoOverlay();
+    const LADO = Math.min(window.innerWidth, window.innerHeight) * 0.86;
+    const cv = document.createElement('canvas');
+    const celdas = Math.max(m.width, m.height);
+    const cel = Math.max(4, Math.floor(LADO / celdas));
+    cv.width = m.width * cel; cv.height = m.height * cel;
+    cv.style.cssText = `image-rendering:pixelated;max-width:92vw;max-height:70vh;border:2px solid var(--gold);`;
+    const c2 = cv.getContext('2d');
+    // terreno
+    for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
+      const i = y * m.width + x;
+      c2.fillStyle = m.solid[i] === 1 || m.solid[i] === 3 ? '#20242e'
+        : m.suelo[i] === 3 ? '#1e3f8f'
+        : m.suelo[i] === 2 ? '#6b4f2a'
+        : (x + y) % 2 ? '#2f7a3d' : '#2a6f38';
+      c2.fillRect(x * cel, y * cel, cel, cel);
+    }
+    // portales, npc, player
+    for (const p of m.portalesPos) { c2.fillStyle = p.css; c2.fillRect(p.x / 32 * cel - 3, p.y / 32 * cel - 3, 7, 7); }
+    for (const n of g.npcs) { c2.fillStyle = '#2ecc71'; c2.fillRect(n.x / 32 * cel - 2, n.y / 32 * cel - 2, 5, 5); }
+    c2.fillStyle = '#fff';
+    c2.beginPath(); c2.arc(g.player.x / 32 * cel, g.player.y / 32 * cel, 5, 0, 7); c2.fill();
+    c2.strokeStyle = '#9b59b6'; c2.lineWidth = 2;
+    c2.beginPath(); c2.arc(g.player.x / 32 * cel, g.player.y / 32 * cel, 7, 0, 7); c2.stroke();
+
+    const wrap = document.createElement('div');
+    wrap.className = 'rpg-panel'; wrap.style.textAlign = 'center';
+    wrap.innerHTML = `
+      <h2>🗺️ MAPA — ${m.name === 'mazmorra' ? `MAZMORRA ${g.dungeon?.rango || ''}` : 'BOSQUE INICIAL'}</h2>
+      <div style="display:flex;justify-content:center;gap:14px;font-size:8px;margin-bottom:8px">
+        <span style="color:#fff">● tú</span><span style="color:#2ecc71">● NPC</span><span style="color:#8bc34a">● portal E</span><span style="color:#ff9800">● portal S</span>
+      </div>`;
+    wrap.appendChild(cv);
+    const btn = document.createElement('button');
+    btn.className = 'rpg-btn small'; btn.style.marginTop = '10px';
+    btn.textContent = 'CERRAR MAPA (M)';
+    btn.onclick = () => g.changeState('PLAYING');
+    wrap.appendChild(btn);
+    wrap.style.pointerEvents = 'auto';
+    o.appendChild(wrap);
   }
 
   _cerrarOverlay() {
@@ -85,15 +135,16 @@ export class UI {
   /* ---------- Menú título ---------- */
   _menu() {
     const o = this._nuevoOverlay();
+    o.classList.add('title-bg'); // exponer el key-art de fondo
     const info = SaveManager.getSaveInfo();
     o.innerHTML = `
       <div class="title-logo">SOLO HUNT</div>
-      <div class="title-sub">OVERWORLD v2</div>
+      <div class="title-sub">OVERWORLD ✦ REMASTER</div>
       <button class="rpg-btn" id="bt-continuar" ${info ? '' : 'disabled'}>▶ Continuar ${info ? `(Nv. ${info.level})` : ''}</button>
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
-      <div class="title-ver">v2.0.0 · M1 — Acción en tiempo real</div>`;
+      <div class="title-ver">v2.0 Remaster · Acción en tiempo real · Z/X/Shift/C · I inventario · M mapa</div>`;
     o.querySelector('#bt-continuar').addEventListener('click', () => {
       this.game.audio.playSFX('menuOk');
       this.game.changeState('PLAYING');
@@ -231,14 +282,14 @@ export class UI {
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;align-items:center">
           <button class="rpg-btn" id="bt-resume">▶ Continuar</button>
           <button class="rpg-btn small" id="bt-inv">🎒 Inventario (I)</button>
-          <button class="rpg-btn small" id="bt-mute">${g.audio.isMuted ? '🔊 Quitar silencio' : '🔇 Silenciar'} (M)</button>
+          <button class="rpg-btn small" id="bt-mute">${g.audio.isMuted ? '🔊 Quitar silencio' : '🔇 Silenciar'} (N)</button>
           <button class="rpg-btn small green" id="bt-save">💾 Guardar</button>
           <button class="rpg-btn small" id="bt-menu">🚪 Salir al menú</button>
         </div>
       </div>`;
     o.querySelector('#bt-resume').onclick = () => { g.audio.playSFX('menuOk'); g.changeState('PLAYING'); };
     o.querySelector('#bt-inv').onclick = () => g.changeState('INVENTORY');
-    o.querySelector('#bt-mute').onclick = e => { const m = g.audio.toggleMute(); e.target.textContent = m ? '🔊 Quitar silencio (M)' : '🔇 Silenciar (M)'; };
+    o.querySelector('#bt-mute').onclick = e => { const m = g.audio.toggleMute(); e.target.textContent = m ? '🔊 Quitar silencio (N)' : '🔇 Silenciar (N)'; };
     o.querySelector('#bt-save').onclick = () => {
       if (g.dungeon) return this.toast('🚫 No puedes guardar dentro de una mazmorra', '#e74c3c');
       SaveManager.save(g); g.audio.playSFX('menuOk'); this.toast('💾 Guardado');
@@ -315,26 +366,79 @@ export class UI {
     o.querySelector('#bt-menu').onclick = () => { SaveManager.save(g); location.reload(); };
   }
 
-  /* ---------- Inventario ---------- */
+  /* ---------- Inventario estilo WoW: muñeco + equipo + stats ---------- */
   _inventario() {
     const g = this.game, p = g.player, inv = g.inventory;
     const o = this._nuevoOverlay();
+
+    // slots de equipamiento (tipo papel-doll: clic para equipar/quitar)
+    const eqSlot = (tipo, icono) => {
+      const it = inv.equipped[tipo];
+      return `<div class="equip-slot" data-tipo="${tipo}" title="">
+        <span class="eq-ico">${it ? ICONOS[tipo] : icono}</span>
+        ${it ? `<span class="eq-name" style="color:${RARITY_COLORS[it.rarity]}">${it.name}</span>`
+             : `<span class="eq-name eq-void">vacío</span>`}
+      </div>`;
+    };
+
     const slotHTML = (s, i) => s
       ? `<div class="inv-slot rar-${s.item.rarity}" data-i="${i}">${ICONOS[s.item.type] || '❓'}${s.cantidad > 1 ? `<span class="qty">${s.cantidad}</span>` : ''}</div>`
       : `<div class="inv-slot" data-i="${i}"></div>`;
+
+    const imgChar = g.assets['char_' + p.charId];
     o.innerHTML = `
-      <div class="rpg-panel" style="max-height:88vh;overflow:auto">
-        <h2>🎒 INVENTARIO</h2>
-        <div class="inv-grid">${inv.slots.map(slotHTML).join('')}</div>
-        <h3>Equipado</h3>
-        <p>⚔️ Arma: ${inv.equipped.weapon ? inv.equipped.weapon.name : '—'}<br>
-           🛡️ Armadura: ${inv.equipped.armor ? inv.equipped.armor.name : '—'}</p>
-        <h3>Cazador</h3>
-        <p>ATQ ${p.atk} · DEF ${p.def} · MATQ ${p.matk} · MDEF ${p.mdef}<br>
-           CRIT ${p.critChance.toFixed(1)}% · EVA ${p.evasion.toFixed(1)}%</p>
-        <p style="margin-top:6px;font-size:8px;color:#888">Click: equipar arma/armadura · usar consumible</p>
-        <button class="rpg-btn" id="bt-close" style="display:block;margin:14px auto 0">CERRAR (I)</button>
+      <div class="rpg-panel papel" style="max-height:92vh;overflow:auto">
+        <h2>${p.charId.toUpperCase()} — Nivel ${p.level}</h2>
+        <div class="papel-cols">
+          <div class="papel-col">
+            <div class="papel-marco">
+              ${imgChar ? `<img src="${imgChar.src}" alt="cazador">` : '🧝'}
+              ${eqSlot('weapon', '⚔️')}
+              ${eqSlot('armor', '🛡️')}
+              ${eqSlot('accessory', '💍')}
+            </div>
+          </div>
+          <div class="papel-col papel-inv">
+            <h3>🎒 Mochila (${inv.slots.filter(Boolean).length}/${inv.slots.length})</h3>
+            <div class="inv-grid">${inv.slots.map(slotHTML).join('')}</div>
+            <p class="ayuda">Click: equipar arma/armadura · usar consumible</p>
+          </div>
+          <div class="papel-col">
+            <h3 style="color:#ffd700">📊 Estadísticas</h3>
+            <table class="stat-table">
+              <tr><td>PV</td><td>${Math.ceil(p.hp)} / ${p.maxHp}</td></tr>
+              <tr><td>PM</td><td>${Math.ceil(p.mp)} / ${p.maxMp}</td></tr>
+              <tr><td>ATQ</td><td>${p.atk}</td></tr>
+              <tr><td>DEF</td><td>${p.def}</td></tr>
+              <tr><td>MATQ</td><td>${p.matk}</td></tr>
+              <tr><td>MDEF</td><td>${p.mdef}</td></tr>
+              <tr><td>CRÍT</td><td>${p.critChance.toFixed(1)}%</td></tr>
+              <tr><td>EVASIÓN</td><td>${p.evasion.toFixed(1)}%</td></tr>
+              <tr><td>DROPS</td><td>+${p.dropBonus.toFixed(1)}%</td></tr>
+              <tr><td>REGEN</td><td>${p.hpRegen.toFixed(1)}/s</td></tr>
+              <tr><td style="color:#ffd700">ORO</td><td>${formatNumber(p.gold)}</td></tr>
+              <tr><td>☠️ Bajas</td><td>${p.totalKills}</td></tr>
+            </table>
+          </div>
+        </div>
+        <button class="rpg-btn" id="bt-close" style="display:block;margin:12px auto 0">CERRAR (I)</button>
       </div>`;
+
+    // clicks en ranuras de equipo → desequipar
+    o.querySelectorAll('.equip-slot').forEach(el => {
+      el.addEventListener('pointerdown', () => {
+        const tipo = el.dataset.tipo;
+        const it = inv.equipped[tipo];
+        if (!it) return;
+        inv.equipped[tipo] = null;
+        inv.addItem(it, 1);
+        g.player.recalculateStats();
+        g.audio.playSFX('item');
+        this.toast(`🔓 Desequipado: ${it.name}`, '#95a5a6');
+        this._inventario();
+      });
+    });
+    // clicks en mochila
     o.querySelectorAll('.inv-slot').forEach(el => {
       el.addEventListener('pointerdown', () => {
         const i = +el.dataset.i;
@@ -348,8 +452,7 @@ export class UI {
         const s = inv.slots[+el.dataset.i];
         if (!s) return;
         const t = document.createElement('div');
-        t.className = 'tooltip';
-        t.id = 'tt';
+        t.className = 'tooltip'; t.id = 'tt';
         const st = Object.entries(s.item.stats || {}).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' · ');
         t.innerHTML = `<b style="color:${RARITY_COLORS[s.item.rarity]}">${s.item.name}</b><br>${s.item.type} · ${s.item.rarity}<br>${st}<br><span style="color:#888">Venta: ${s.item.sellPrice} oro</span>`;
         const r = el.getBoundingClientRect();
@@ -757,11 +860,20 @@ export class UI {
   renderMenuCanvas(ctx) {
     const g = this.game;
     const W = ctx.canvas.width, H = ctx.canvas.height;
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#0a0a1a');
-    grad.addColorStop(1, '#1b0b33');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
+    const bg = g.assets['menu_bg'];
+    if (bg) { // key-art de fondo (cover)
+      const es = Math.max(W / bg.width, H / bg.height);
+      const w = bg.width * es, h = bg.height * es;
+      ctx.drawImage(bg, (W - w) / 2, (H - h) / 2, w, h);
+      ctx.fillStyle = 'rgba(5, 5, 18, 0.55)'; // barniz para que el título lea
+      ctx.fillRect(0, 0, W, H);
+    } else {
+      const grad = ctx.createLinearGradient(0, 0, 0, H);
+      grad.addColorStop(0, '#0a0a1a');
+      grad.addColorStop(1, '#1b0b33');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, W, H);
+    }
     // estrellas/sombras flotantes
     const t = (g.lastTime || 0) / 1000;
     for (let i = 0; i < 42; i++) {

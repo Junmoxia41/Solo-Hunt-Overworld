@@ -3,7 +3,7 @@
    niveles, dash, combos, 4 habilidades y serialización.
    ============================================================ */
 import * as C from './constants.js';
-import { clamp, randomFloat } from './utils.js';
+import { clamp, randomFloat, lerp } from './utils.js';
 
 export class Player {
   constructor(game, x, y) {
@@ -122,17 +122,21 @@ export class Player {
       this.isInvincible = true; // i-frames durante el dash
       if (this.dashTimer <= 0) { this.isDashing = false; this.iframeTimer = 0.15; }
     } else {
-      this.vx = input.x * this.speed;
-      this.vy = input.y * this.speed;
+      // aceleración suave: menos "interruptor", mejor sensación de control
+      const tx = input.x * this.speed, ty = input.y * this.speed;
+      this.vx = lerp(this.vx, tx, 1 - Math.pow(0.0001, dt));
+      this.vy = lerp(this.vy, ty, 1 - Math.pow(0.0001, dt));
+      if (Math.abs(this.vx) < 2 && tx === 0) this.vx = 0;
+      if (Math.abs(this.vy) < 2 && ty === 0) this.vy = 0;
     }
 
-    // Dirección de mirada (para el ataque frontal)
+    // Mirada: la dirección 4-vías para el flip y empujes
     if (input.x !== 0 || input.y !== 0) {
       if (Math.abs(input.x) > Math.abs(input.y)) this.direction = input.x > 0 ? 'right' : 'left';
       else this.direction = input.y > 0 ? 'down' : 'up';
       if (input.x !== 0) this.facingSign = input.x > 0 ? 1 : -1;
     }
-    this.isMoving = (this.vx !== 0 || this.vy !== 0);
+    this.isMoving = (Math.abs(this.vx) + Math.abs(this.vy)) > 12;
 
     // Colisión con tiles sólidos (eje a eje para arrastrarse por paredes)
     const mapa = this.game.currentMap;
@@ -146,10 +150,22 @@ export class Player {
     this.y = clamp(this.y, 8, mapa.pixelH - this.height - 8);
   }
 
+  /* ---------- Puntería: ¿a dónde apunta el jugador? ---------- */
+  /** En PC atacamos HACIA EL CURSOR; en táctil, hacia el frente (facing). */
+  _aimAngulo() {
+    const g = this.game;
+    if (g.input.tieneCursor()) {
+      const m = g.input.aimMundo(g.camera);
+      return Math.atan2(m.y - (this.y + 16), m.x - (this.x + 16));
+    }
+    return { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[this.direction] ?? 0;
+  }
+
+  /* ---------- Combate ---------- */
   _combate(dt) {
     const g = this.game, inp = g.input;
 
-    // — Ataque básico (Z / botón ATK) —
+    // — Ataque básico (Z o CLIC; en PC va hacia el cursor) —
     if (inp.isAttack() && this.attackCooldown <= 0 && !this.isAttacking) {
       this.isAttacking = true;
       this.attackType = 'basic';
@@ -157,7 +173,7 @@ export class Player {
       this.attackCooldown = C.ATTACK_COOLDOWN;
       this.comboCount = (this.comboTimer > 0) ? this.comboCount + 1 : 1;
       this.comboTimer = 0.6;
-      this._activarHitbox(44, 34);
+      this._activarHitboxAim(40, 38, 1.0);
       g.audio.playSFX('slash' + (1 + this.comboCount % 3));
     }
 
@@ -169,7 +185,7 @@ export class Player {
       this.heavyCd = C.HEAVY_ATTACK_COOLDOWN;
       this.attackCooldown = Math.max(this.attackCooldown, 0.15);
       this.mp -= C.HEAVY_COST;
-      this._activarHitbox(62, 52);
+      this._activarHitboxAim(52, 50, 1.15);
       g.audio.playSFX('heavy');
     }
 
@@ -187,11 +203,18 @@ export class Player {
       g.combat.triggerScreenShake(7, 0.3);
     }
 
-    // — Dash (Shift) —
+    // — Dash (Shift) — en PC también sigue al cursor —
     if (inp.isDash() && this.dashCooldown <= 0 && this.mp >= C.DASH_COST && !this.isDashing) {
-      const m = inp.getMovement();
-      let dx = m.x, dy = m.y;
-      if (dx === 0 && dy === 0) { dx = this.facingSign; dy = 0; } // dash hacia donde mira
+      let dx, dy;
+      if (g.input.tieneCursor()) {
+        const m = g.input.aimMundo(g.camera);
+        dx = m.x - (this.x + 16); dy = m.y - (this.y + 16);
+        this.facingSign = dx >= 0 ? 1 : -1;
+      } else {
+        const m = inp.getMovement();
+        dx = m.x; dy = m.y;
+        if (dx === 0 && dy === 0) { dx = this.facingSign; dy = 0; }
+      }
       const len = Math.hypot(dx, dy) || 1;
       this.isDashing = true;
       this.dashTimer = C.DASH_DURATION;
@@ -205,16 +228,16 @@ export class Player {
     if (inp.isInteract()) this._intentarAriseONpc();
   }
 
-  _activarHitbox(w, h) {
-    const cx = this.x + this.width / 2, cy = this.y + this.height / 2;
-    const pos = {
-      right: { x: this.x + this.width - 6, y: cy - h / 2, width: w, height: h },
-      left:  { x: this.x - w + 6,         y: cy - h / 2, width: w, height: h },
-      up:    { x: cx - h / 2, y: this.y - w + 10, width: h, height: w },
-      down:  { x: cx - h / 2, y: this.y + this.height - 10, width: h, height: w }
-    }[this.direction];
-    this.hitbox = { ...pos, active: true };
+  /** Hitbox circular orientada hacia el cursor (o el frente en táctil) */
+  _activarHitboxAim(dist, radio, anchoArco) {
+    const ang = this._aimAngulo();
+    const cx = this.x + 16 + Math.cos(ang) * dist;
+    const cy = this.y + 16 + Math.sin(ang) * dist;
+    this.hitbox = { x: cx - radio, y: cy - radio, width: radio * 2, height: radio * 2, active: true, circular: true };
     this._hitRegistered = false;
+    // el cuerpo gira hacia el golpe
+    this.facingSign = Math.cos(ang) >= 0 ? 1 : -1;
+    this._aimAng = ang; // lo usa el render del arco
   }
 
   _activarHitboxSkill() {
@@ -336,12 +359,12 @@ export class Player {
     const img = this.game.assets['char_' + this.charId];
     const size = 58;
 
-    // Sombra en los pies
+    // Sombra en los pies (a la altura real de la suela del sprite)
     ctx.save();
-    ctx.globalAlpha = 0.35;
+    ctx.globalAlpha = 0.38;
     ctx.fillStyle = '#000';
     ctx.beginPath();
-    ctx.ellipse(this.x + 16, this.y + 30, 14, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(this.x + 16, this.y + 40, 14, 5.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
 
@@ -355,19 +378,37 @@ export class Player {
     }
     ctx.restore();
 
-    // Efecto visual del ataque (arco de corte)
+    // Retículo de puntería en PC (punto sutil bajo el cursor)
+    if (this.game.input.tieneCursor() && !this.isAttacking) {
+      const m = this.game.input.aimMundo(this.game.camera);
+      ctx.save();
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = '#9b59b6';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(m.x, m.y, 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(m.x, m.y, 1.6, 0, Math.PI * 2); ctx.fillStyle = '#9b59b6'; ctx.fill();
+      ctx.restore();
+    }
+
+    // Efecto visual del ataque (arco de corte hacia donde apunta el cursor)
     if (this.isAttacking && this.attackType !== 'skill') {
       const t = 1 - this.attackTimer / (this.attackType === 'heavy' ? 0.5 : 0.22);
       ctx.save();
       ctx.translate(this.x + 16, this.y + 14);
-      const baseAng = { right: 0, down: Math.PI / 2, left: Math.PI, up: -Math.PI / 2 }[this.direction];
-      ctx.rotate(baseAng);
+      ctx.rotate(this._aimAng ?? 0); // el acero sigue al cursor
       ctx.globalAlpha = 0.9 - t * 0.8;
+      // triple filo: brillo principal + estela
       ctx.strokeStyle = this.attackType === 'heavy' ? '#ffd700' : '#9b59b6';
-      ctx.lineWidth = this.attackType === 'heavy' ? 7 : 4;
+      ctx.lineWidth = this.attackType === 'heavy' ? 7 : 4.5;
       ctx.beginPath();
-      const reach = this.attackType === 'heavy' ? 46 : 34;
-      ctx.arc(0, 0, reach, -1.1 + t * 1.4, -0.2 + t * 1.4);
+      const reach = this.attackType === 'heavy' ? 52 : 40;
+      ctx.arc(0, 0, reach, -1.15 + t * 1.5, -0.15 + t * 1.5);
+      ctx.stroke();
+      ctx.globalAlpha = (0.9 - t * 0.8) * 0.5;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.arc(0, 0, reach + 6, -1.0 + t * 1.5, -0.3 + t * 1.5);
       ctx.stroke();
       ctx.restore();
     }

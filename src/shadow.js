@@ -129,11 +129,11 @@ export class Shadow {
     const img = this.game.assets['mob_' + this.tipo];
     const bob = Math.sin(this.t * 6) * 2.5;
 
-    // sombra en suelo
+    // sombra en suelo (al nivel de los pies)
     ctx.save();
     ctx.globalAlpha = 0.35;
     ctx.fillStyle = '#220044';
-    ctx.beginPath(); ctx.ellipse(this.x + 16, this.y + 30, 13, 5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(this.x + 16, this.y + 37, 13, 5, 0, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
 
     // cuerpo: sprite del tipo original oscurecido con tinte umbrío

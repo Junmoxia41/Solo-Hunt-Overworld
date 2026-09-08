@@ -39,6 +39,18 @@ guardado en **localStorage** (`soloHuntSaveV2`), módulos ES6, `requestAnimation
 - 5 jefes de 3 fases (esbirros, anillos de proyectiles, enrage) con barra grande.
 - Resultados con EXP ×2, oro de rango y bonus de tiempo; castigo al fallar.
 
+## ✨ Remasterización (actual)
+- **Arte nuevo**: sprites chibi reales para árboles, flores y rocas (chroma-key propio),
+  suelos retexturizados (hierba con briznas, tierra con guijarros, agua con orillas espumosas).
+- **Sombras bien ancladas** bajo los pies de jugador, enemigos y sombras aliadas.
+- **PC: el ataque y el dash siguen al cursor** con retículo de puntería; arco de corte con estela.
+- **Movimiento con aceleración suave** (menos sensación de interruptor).
+- **M = mapa mundial** a pantalla completa · **N = silencio**.
+- **Pantalla de carga** con 4 key-arts aleatorios, consejos, barra animada y chibi corredor.
+- **Menú principal con key-art épico** de fondo.
+- **Inventario estilo WoW**: muñeco de papel con slots de equipo, rejilla de mochila
+  y tabla de estadísticas completa.
+
 ## 🛒 Milestone 3 — Economía y PWA
 - Mercader Krow con tienda completa (comprar ×3 / vender al valor de ficha).
 - Selector de cazador con los 12 personajes chibi (se guarda en la partida).

@@ -55,21 +55,39 @@ export class Game {
   async loadImage(src) {
     return new Promise(res => {
       const img = new Image();
-      img.onload = () => res(img);
-      img.onerror = () => res(null); // nunca bloquear por un sprite
+      img.onload = () => { this._tickCarga?.(); res(img); };
+      img.onerror = () => { this._tickCarga?.(); res(null); }; // nunca bloquear por un sprite
       img.src = src;
     });
+  }
+
+  /** Progreso visual de la pantalla de carga */
+  _configurarCarga(total) {
+    this._carga = { total, hechos: 0 };
+    this._tickCarga = () => {
+      this._carga.hechos++;
+      const pct = Math.round(100 * this._carga.hechos / this._carga.total);
+      const barra = document.getElementById('load-fill');
+      const num = document.getElementById('load-num');
+      const runner = document.getElementById('load-runner');
+      if (barra) barra.style.width = pct + '%';
+      if (num) num.textContent = pct + '%';
+      if (runner) runner.style.left = `calc(${pct}% - 12px)`;
+    };
   }
 
   async init() {
     this.resize();
 
+    // Progreso de carga total: 4 JSON + 12 cazadores + 5 enemigos + 3 tiles + 1 fondo de menú
+    this._configurarCarga(25);
+
     // Datos JSON (enemigos, items, misiones, diálogos)
     const [enemiesData, itemsData, questsData, dialoguesData] = await Promise.all([
-      fetch('data/enemies.json').then(r => r.json()),
-      fetch('data/items.json').then(r => r.json()),
-      fetch('data/quests.json').then(r => r.json()),
-      fetch('data/dialogues.json').then(r => r.json())
+      fetch('data/enemies.json').then(r => { this._tickCarga(); return r.json(); }),
+      fetch('data/items.json').then(r => { this._tickCarga(); return r.json(); }),
+      fetch('data/quests.json').then(r => { this._tickCarga(); return r.json(); }),
+      fetch('data/dialogues.json').then(r => { this._tickCarga(); return r.json(); })
     ]);
     this.data = { enemies: enemiesData, items: itemsData, quests: questsData, dialogues: dialoguesData };
 
@@ -80,6 +98,12 @@ export class Game {
     for (const t of ['lobo','murcielago','nomuerto','duende','mago']) {
       this.assets['mob_' + t] = await this.loadImage(`assets/sprites/${t}.png`);
     }
+    // Tiles decorativos (árbol/flor/roca remasterizados)
+    for (const d of ['arbol','flor','roca']) {
+      this.assets['tile_' + d] = await this.loadImage(`assets/tiles/${d}.png`);
+    }
+    // Fondo de menú: key-art aleatorio entre los 4 (el de carga puede ser otro)
+    this.assets['menu_bg'] = await this.loadImage(`assets/ui/loading_${randomInt(1, 4)}.png`);
 
     // Sistemas
     this.input = new InputManager(this);
@@ -104,6 +128,10 @@ export class Game {
     this.quests = new QuestGuia(this);
 
     this.spawnOleadaInicial();
+
+    // Quitar la pantalla de carga (con fundido)
+    const loader = document.getElementById('loading');
+    if (loader) { loader.classList.add('done'); setTimeout(() => loader.remove(), 800); }
 
     // Autoguardado (nunca dentro de una mazmorra: el mapa sería temporal)
     this._autosave = setInterval(() => {
@@ -192,7 +220,7 @@ export class Game {
     ctx.restore();
 
     // HUD por encima del mundo (también durante diálogos y paneles congelados)
-    if (['PLAYING', 'PAUSED', 'DIALOGUE', 'PORTAL', 'DUNGEON_END', 'EXTRACT', 'SHOP'].includes(this.state)) {
+    if (['PLAYING', 'PAUSED', 'DIALOGUE', 'PORTAL', 'DUNGEON_END', 'EXTRACT', 'SHOP', 'MAPVIEW'].includes(this.state)) {
       this.ui.renderHUD(ctx);
     }
   }

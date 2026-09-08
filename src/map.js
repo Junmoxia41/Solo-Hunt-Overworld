@@ -59,6 +59,21 @@ export class Mapa {
     }
   }
 
+  /** ¿Tile de tierra firme en (tx, ty)? (para espumas del lago) */
+  _esTierra(tx, ty) {
+    if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return false;
+    return this.suelo[ty * MAP_W + tx] !== 3;
+  }
+  _siEmbTierra(tx, ty) {
+    return this._esTierra(tx - 1, ty) || this._esTierra(tx + 1, ty) ||
+           this._esTierra(tx, ty - 1) || this._esTierra(tx, ty + 1);
+  }
+  /** Ruido determinista por tile (grano de textura) */
+  _ruidoTile(x, y, s) {
+    const n = Math.sin(x * 12.9898 + y * 78.233 + s) * 43758.5453;
+    return n - Math.floor(n);
+  }
+
   _limpiarArea(tx, ty, r) {
     for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) {
       if (x < 2 || y < 2 || x >= MAP_W - 2 || y >= MAP_H - 2) continue;
@@ -90,44 +105,95 @@ export class Mapa {
       const i = y * MAP_W + x;
       const px = x * T, py = y * T;
       const s = this.suelo[i];
+      const nit = this._ruidoTile(x, y, 99); // grano determinista por tile
       // Suelo
-      if (s === 3) {
-        ctx.fillStyle = '#1e3f8f';
+      if (s === 3) { // — Agua: azul profundo, olas y cristalinas —
+        ctx.fillStyle = '#16407c';
         ctx.fillRect(px, py, T, T);
-        ctx.fillStyle = 'rgba(120,180,255,0.25)';
+        ctx.fillStyle = nit > 0.5 ? '#1b4a90' : '#123a74';
+        ctx.fillRect(px, py, T, T);
+        // orilla espumosa al tocar tierra
+        if (this._siEmbTierra(x, y)) {
+          ctx.fillStyle = 'rgba(190,230,255,0.35)';
+          if (this._esTierra(x - 1, y)) ctx.fillRect(px, py, 3, T);
+          if (this._esTierra(x + 1, y)) ctx.fillRect(px + T - 3, py, 3, T);
+          if (this._esTierra(x, y - 1)) ctx.fillRect(px, py, T, 3);
+          if (this._esTierra(x, y + 1)) ctx.fillRect(px, py + T - 3, T, 3);
+        }
+        ctx.fillStyle = 'rgba(140,190,255,0.30)';
         const ola = Math.sin(t * 2 + (x + y) * 0.8) * 6;
         ctx.fillRect(px + 4 + ola, py + 12, 14, 2);
+        ctx.fillStyle = 'rgba(220,240,255,0.35)';
         ctx.fillRect(px + 12 - ola, py + 22, 12, 2);
-      } else if (s === 2) {
+      } else if (s === 2) { // — Tierra: pardo con guijarros y borde rugoso —
         ctx.fillStyle = '#6b4f2a'; ctx.fillRect(px, py, T, T);
-        ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(px + ((x * 7) % 20), py + ((y * 13) % 20), 5, 3);
-      } else {
+        ctx.fillStyle = '#755a31'; ctx.fillRect(px, py, T, 3);
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.fillRect(px + ((x * 7) % 20), py + ((y * 13) % 20), 5, 3);
+        ctx.fillStyle = 'rgba(255,220,150,0.16)';
+        if (nit > 0.55) ctx.fillRect(px + 3 + ((x * 11) % 22), py + 3 + ((y * 5) % 22), 3, 2);
+        if (nit < 0.35) ctx.fillRect(px + 14, py + 18, 4, 2);
+      } else { // — Hierba: dos tonos + briznas y motas de luz —
         ctx.fillStyle = s === 0 ? '#2f7a3d' : '#2a6f38';
         ctx.fillRect(px, py, T, T);
-        ctx.fillStyle = 'rgba(0,0,0,0.08)';
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        if ((x + y) % 4 === 0) ctx.fillRect(px, py, T, 4);
+        ctx.fillStyle = 'rgba(0,0,0,0.10)';
         ctx.fillRect(px + ((x * 11) % 26), py + ((y * 17) % 26), 3, 3);
         ctx.fillRect(px + ((x * 5) % 26), py + ((y * 7) % 26), 2, 2);
+        // briznas de hierba (puñado de líneas verticales alternas)
+        if (nit > 0.6) {
+          ctx.strokeStyle = 'rgba(20,70,35,0.55)'; ctx.lineWidth = 1;
+          const bx = px + 4 + Math.floor(nit * 20);
+          ctx.beginPath();
+          ctx.moveTo(bx, py + 26); ctx.lineTo(bx + 1, py + 20);
+          ctx.moveTo(bx + 5, py + 24); ctx.lineTo(bx + 6, py + 19);
+          ctx.stroke();
+        }
       }
       // Rejilla sutil
-      ctx.strokeStyle = 'rgba(0,0,0,0.08)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.07)';
       ctx.strokeRect(px + .5, py + .5, T, T);
 
-      // Decoración
+      // Decoración (sprites remasterizados si están cargados)
       const d = this.deco[i];
+      const g = this.game;
       if (d === 'flor') {
-        ctx.font = '13px serif'; ctx.textAlign = 'center';
-        ctx.fillText(((x + y) % 2) ? '🌸' : '🌼', px + 16, py + 21);
+        const img = g.assets['tile_flor'];
+        if (img) {
+          const wF = 22, hF = 26;
+          ctx.drawImage(img, px + 16 - wF / 2, py + 28 - hF + ((x + y) % 2 ? -2 : 0), wF, hF);
+        } else {
+          ctx.font = '13px serif'; ctx.textAlign = 'center';
+          ctx.fillText(((x + y) % 2) ? '🌸' : '🌼', px + 16, py + 21);
+        }
       } else if (d === 'roca') {
-        ctx.fillStyle = '#7d8590';
-        ctx.beginPath(); ctx.arc(px + 16, py + 20, 9, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#565e68';
-        ctx.beginPath(); ctx.arc(px + 13, py + 17, 4, 0, Math.PI * 2); ctx.fill();
+        const img = g.assets['tile_roca'];
+        if (img) {
+          // sombra de anclaje + roca
+          ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
+          ctx.beginPath(); ctx.ellipse(px + 16, py + 23, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+          ctx.drawImage(img, px + 16 - 14, py + 25 - 24, 28, 24);
+        } else {
+          ctx.fillStyle = '#7d8590';
+          ctx.beginPath(); ctx.arc(px + 16, py + 20, 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#565e68';
+          ctx.beginPath(); ctx.arc(px + 13, py + 17, 4, 0, Math.PI * 2); ctx.fill();
+        }
       } else if (d === 'arbol') {
-        ctx.fillStyle = '#5d4037'; ctx.fillRect(px + 13, py + 18, 6, 12);
-        ctx.fillStyle = '#14532d';
-        ctx.beginPath(); ctx.moveTo(px + 16, py - 4); ctx.lineTo(px + 4, py + 14); ctx.lineTo(px + 28, py + 14); ctx.fill();
-        ctx.fillStyle = '#166534';
-        ctx.beginPath(); ctx.moveTo(px + 16, py - 10); ctx.lineTo(px + 2, py + 8); ctx.lineTo(px + 30, py + 8); ctx.fill();
+        const img = g.assets['tile_arbol'];
+        if (img) {
+          ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
+          ctx.beginPath(); ctx.ellipse(px + 16, py + 28, 10, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+          const wA = 46, hA = 65; // sprite 181x256 remasterizado
+          ctx.drawImage(img, px + 16 - wA / 2, py + 30 - hA, wA, hA);
+        } else {
+          ctx.fillStyle = '#5d4037'; ctx.fillRect(px + 13, py + 18, 6, 12);
+          ctx.fillStyle = '#14532d';
+          ctx.beginPath(); ctx.moveTo(px + 16, py - 4); ctx.lineTo(px + 4, py + 14); ctx.lineTo(px + 28, py + 14); ctx.fill();
+          ctx.fillStyle = '#166534';
+          ctx.beginPath(); ctx.moveTo(px + 16, py - 10); ctx.lineTo(px + 2, py + 8); ctx.lineTo(px + 30, py + 8); ctx.fill();
+        }
       }
     }
 

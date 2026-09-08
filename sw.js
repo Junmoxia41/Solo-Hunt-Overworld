@@ -3,7 +3,7 @@
    Estrategia: PRECACHE total al instalar + cache-first en fetch.
    El juego es 100% offline tras la primera visita.
    ============================================================ */
-const CACHE = 'sh-v2-m3.0';
+const CACHE = 'sh-v2-remaster.0';
 
 // Todo lo necesario para jugar sin conexión
 const PRECACHE = [
@@ -18,12 +18,15 @@ const PRECACHE = [
   './assets/fonts/pressstart2p.woff2',
   './assets/ui/icon-192.png', './assets/ui/icon-512.png',
   './assets/ui/icon-512-maskable.png', './assets/ui/apple-touch-icon.png',
+  './assets/ui/loading_1.png', './assets/ui/loading_2.png',
+  './assets/ui/loading_3.png', './assets/ui/loading_4.png',
   './assets/chars/kaito.png', './assets/chars/rin.png', './assets/chars/yuna.png',
   './assets/chars/grom.png', './assets/chars/sora.png', './assets/chars/dante.png',
   './assets/chars/mika.png', './assets/chars/roku.png', './assets/chars/elena.png',
   './assets/chars/atlas.png', './assets/chars/nix.png', './assets/chars/hana.png',
   './assets/sprites/lobo.png', './assets/sprites/murcielago.png',
-  './assets/sprites/nomuerto.png', './assets/sprites/duende.png', './assets/sprites/mago.png'
+  './assets/sprites/nomuerto.png', './assets/sprites/duende.png', './assets/sprites/mago.png',
+  './assets/tiles/arbol.png', './assets/tiles/flor.png', './assets/tiles/roca.png'
 ];
 
 self.addEventListener('install', e => {

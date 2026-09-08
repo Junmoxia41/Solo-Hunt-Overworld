@@ -14,11 +14,43 @@
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <!-- Pantalla de carga (se retira cuando Game.init termina) -->
+  <div id="loading">
+    <img id="load-bg" alt="Arte de Solo Hunt Overworld">
+    <div class="load-oscuro"></div>
+    <div class="load-wrap">
+      <div class="load-title">SOLO HUNT<span>OVERWORLD</span></div>
+      <div class="load-bar">
+        <div class="load-fill" id="load-fill"></div>
+        <img id="load-runner" alt="cazador">
+      </div>
+      <div id="load-num" class="load-num">0%</div>
+      <div id="load-tip" class="load-tip"></div>
+    </div>
+  </div>
   <!-- Lienzo del juego (renderizado 2D vanilla) -->
   <canvas id="gameCanvas"></canvas>
   <!-- Capa de UI en HTML: menús, HUD táctil, diálogos, inventario -->
   <div id="ui-layer"></div>
   <!-- Punto de entrada -->
   <script type="module" src="src/main.js"></script>
+  <script>
+    /* Elección aleatoria del fondo de carga y del chibi corredor */
+    (() => {
+      const fondo = document.getElementById('load-bg');
+      fondo.src = 'assets/ui/loading_' + (1 + Math.floor(Math.random() * 4)) + '.png';
+      const chars = ['kaito','rin','yuna','grom','sora','dante','mika','roku','elena','atlas','nix','hana'];
+      document.getElementById('load-runner').src = 'assets/chars/' + chars[Math.floor(Math.random() * 12)] + '.png';
+      const tips = [
+        'Consejo: el dash te vuelve invencible durante su salto (Shift / DSH)',
+        'Consejo: extrae sombras pulsando E sobre los cadáveres que brillan en morado',
+        'Consejo: los magos oscuros se teletransportan si te les acercas mucho',
+        'Consejo: los jefes tienen 3 fases. ¡Cuidado con su furia final!',
+        'Consejo: completa mazmorras rápido para un bonus de oro por tiempo',
+        'Consejo: pulsa M en partida para ver el mapa completo del bosque'
+      ];
+      document.getElementById('load-tip').textContent = tips[Math.floor(Math.random() * tips.length)];
+    })();
+  </script>
 </body>
 </html>

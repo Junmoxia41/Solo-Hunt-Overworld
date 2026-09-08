@@ -11,6 +11,9 @@ export class InputManager {
 
     // Joystick virtual
     this.joy = { active: false, id: null, startX: 0, startY: 0, dx: 0, dy: 0, baseX: 0, baseY: 0 };
+
+    // Cursor/táctil de puntería (PC): posición de ratón en pantalla
+    this.mouseX = null; this.mouseY = null;
   }
 
   init() {
@@ -25,11 +28,23 @@ export class InputManager {
     window.addEventListener('pointerdown', () => this.audioKickstart(), { once: true });
 
     if (this.isMobile) this._setupTouch();
+    else {
+      // PC: seguimiento del cursor para atacar/esquivar hacia él
+      window.addEventListener('pointermove', e => {
+        this.mouseX = e.clientX; this.mouseY = e.clientY;
+      });
+    }
     // Ratón: click izquierdo = atacar (jugando en PC también vale el ratón)
     this.game.canvas.addEventListener('pointerdown', e => {
       if (e.pointerType === 'mouse' && this.game.state === 'PLAYING') this.justPressed['KeyZ'] = true;
     });
   }
+
+  /** ¿Hay cursor utilizable? (PC sin modo táctil) */
+  tieneCursor() { return !this.isMobile && this.mouseX !== null; }
+
+  /** Posición del cursor convertida a coordenadas del mundo */
+  aimMundo(camera) { return { x: this.mouseX + camera.x, y: this.mouseY + camera.y }; }
 
   /* El navegador exige un gesto del usuario para habilitar WebAudio */
   audioKickstart() { this.game.audio?.desbloquear(); }
