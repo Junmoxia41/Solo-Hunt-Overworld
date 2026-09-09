@@ -15,9 +15,9 @@ import { pantallaCarga } from './loader.js';
 export const RANGOS = {
   E: { zona: 2,  pisos: 3, segPiso: 100, segExtra: 60, nivelMin: 1,  jefe: { nombre: 'LOBO ALFA CAÍDO',            tipo: 'lobo',      hpMult: 8,  atkMult: 1.6, css: '#8bc34a', recompensaExp: 260,  recompensaOro: 120 },  premioOroBase: 200,  pool: ['iron_sword', 'leather_armor', 'elixir'] },
   D: { zona: 4,  pisos: 4, segPiso: 95,  segExtra: 60, nivelMin: 5,  jefe: { nombre: 'REY DE LOS DUENDES',           tipo: 'duende',    hpMult: 9,  atkMult: 1.7, css: '#26c6da', recompensaExp: 520,  recompensaOro: 260 },  premioOroBase: 420,  pool: ['iron_sword', 'leather_armor', 'elixir'] },
-  C: { zona: 7,  pisos: 5, segPiso: 90,  segExtra: 90, nivelMin: 10, jefe: { nombre: 'MAGO ANTIGUO PROFANADO',       tipo: 'mago',      hpMult: 10, atkMult: 1.8, css: '#42a5f5', recompensaExp: 1100, recompensaOro: 550 },  premioOroBase: 800,  pool: ['shadow_blade', 'elixir', 'iron_sword'] },
-  B: { zona: 10, pisos: 6, segPiso: 85,  segExtra: 90, nivelMin: 15, jefe: { nombre: 'SEÑOR DE LOS NO-MUERTOS',      tipo: 'nomuerto',  hpMult: 11, atkMult: 1.9, css: '#e67e22', recompensaExp: 2200, recompensaOro: 1200 }, premioOroBase: 1500, pool: ['shadow_blade', 'elixir'] },
-  S: { zona: 14, pisos: 7, segPiso: 80,  segExtra: 120, nivelMin: 20, jefe: { nombre: 'MONARCA DE LAS SOMBRAS',      tipo: 'mago',     hpMult: 13, atkMult: 2.1, css: '#ffd700', recompensaExp: 5000, recompensaOro: 3000 }, premioOroBase: 3000, pool: ['monarch_dagger', 'shadow_blade', 'elixir'] }
+  C: { zona: 7,  pisos: 5, segPiso: 90,  segExtra: 90, nivelMin: 10, jefe: { nombre: 'MAGO ANTIGUO PROFANADO',       tipo: 'mago',      hpMult: 10, atkMult: 1.8, css: '#42a5f5', recompensaExp: 1100, recompensaOro: 550 },  premioOroBase: 800,  pool: ['shadow_blade', 'elixir', 'iron_sword', 'colgante_hueso', 'ojo_mago'] },
+  B: { zona: 10, pisos: 6, segPiso: 85,  segExtra: 90, nivelMin: 15, jefe: { nombre: 'SEÑOR DE LOS NO-MUERTOS',      tipo: 'nomuerto',  hpMult: 11, atkMult: 1.9, css: '#e67e22', recompensaExp: 2200, recompensaOro: 1200 }, premioOroBase: 1500, pool: ['shadow_blade', 'elixir', 'ojo_mago'] },
+  S: { zona: 14, pisos: 7, segPiso: 80,  segExtra: 120, nivelMin: 20, jefe: { nombre: 'MONARCA DE LAS SOMBRAS',      tipo: 'mago',     hpMult: 13, atkMult: 2.1, css: '#ffd700', recompensaExp: 5000, recompensaOro: 3000 }, premioOroBase: 3000, pool: ['monarch_dagger', 'shadow_blade', 'elixir', 'sello_monarca'] }
 };
 
 /* ---------- Mapa de mazmorra (interfaz compatible con Mapa) ---------- */

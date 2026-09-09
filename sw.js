@@ -3,7 +3,7 @@
    Estrategia: PRECACHE total al instalar + cache-first en fetch.
    El juego es 100% offline tras la primera visita.
    ============================================================ */
-const CACHE = 'sh-v2-2.1.1';
+const CACHE = 'sh-v2-2.2.0';
 
 // Todo lo necesario para jugar sin conexión
 const PRECACHE = [

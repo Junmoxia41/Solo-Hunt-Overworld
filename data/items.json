@@ -1,13 +1,191 @@
 [
-  { "id": "rusty_sword",   "name": "Espada Oxidada",    "type": "weapon",     "rarity": "common",    "stats": { "atk": 5 },                  "sellPrice": 10,  "stackable": false },
-  { "id": "iron_sword",    "name": "Espada de Hierro",  "type": "weapon",     "rarity": "uncommon",  "stats": { "atk": 12 },                 "sellPrice": 50,  "stackable": false },
-  { "id": "shadow_blade",  "name": "Hoja de Sombras",   "type": "weapon",     "rarity": "epic",      "stats": { "atk": 35, "crit": 5 },      "sellPrice": 500, "stackable": false },
-  { "id": "monarch_dagger","name": "Daga del Monarca",  "type": "weapon",     "rarity": "legendary", "stats": { "atk": 60, "crit": 15 },     "sellPrice": 5000,"stackable": false },
-  { "id": "leather_armor", "name": "Armadura de Cuero", "type": "armor",      "rarity": "common",    "stats": { "def": 5, "hp": 20 },        "sellPrice": 15,  "stackable": false },
-  { "id": "hp_potion",     "name": "Poción de Vida",    "type": "consumable", "rarity": "common",    "stats": {},                            "sellPrice": 5,   "stackable": true, "maxStack": 99 },
-  { "id": "mp_potion",     "name": "Poción de Maná",    "type": "consumable", "rarity": "common",    "stats": {},                            "sellPrice": 5,   "stackable": true, "maxStack": 99 },
-  { "id": "elixir",        "name": "Elixir Real",       "type": "consumable", "rarity": "rare",      "stats": {},                            "sellPrice": 40,  "stackable": true, "maxStack": 10 },
-  { "id": "wolf_fang",     "name": "Colmillo de Lobo",  "type": "material",   "rarity": "common",    "stats": {},                            "sellPrice": 3,   "stackable": true, "maxStack": 99 },
-  { "id": "bat_wing",      "name": "Ala de Murciélago", "type": "material",   "rarity": "common",    "stats": {},                            "sellPrice": 2,   "stackable": true, "maxStack": 99 },
-  { "id": "bone",          "name": "Hueso Antiguo",     "type": "material",   "rarity": "common",    "stats": {},                            "sellPrice": 4,   "stackable": true, "maxStack": 99 }
+  {
+    "id": "rusty_sword",
+    "name": "Espada Oxidada",
+    "type": "weapon",
+    "rarity": "common",
+    "stats": {
+      "atk": 5
+    },
+    "sellPrice": 10,
+    "stackable": false
+  },
+  {
+    "id": "iron_sword",
+    "name": "Espada de Hierro",
+    "type": "weapon",
+    "rarity": "uncommon",
+    "stats": {
+      "atk": 12
+    },
+    "sellPrice": 50,
+    "stackable": false
+  },
+  {
+    "id": "shadow_blade",
+    "name": "Hoja de Sombras",
+    "type": "weapon",
+    "rarity": "epic",
+    "stats": {
+      "atk": 35,
+      "crit": 5
+    },
+    "sellPrice": 500,
+    "stackable": false
+  },
+  {
+    "id": "monarch_dagger",
+    "name": "Daga del Monarca",
+    "type": "weapon",
+    "rarity": "legendary",
+    "stats": {
+      "atk": 60,
+      "crit": 15
+    },
+    "sellPrice": 5000,
+    "stackable": false
+  },
+  {
+    "id": "leather_armor",
+    "name": "Armadura de Cuero",
+    "type": "armor",
+    "rarity": "common",
+    "stats": {
+      "def": 5,
+      "hp": 20
+    },
+    "sellPrice": 15,
+    "stackable": false
+  },
+  {
+    "id": "hp_potion",
+    "name": "Poción de Vida",
+    "type": "consumable",
+    "rarity": "common",
+    "stats": {},
+    "sellPrice": 5,
+    "stackable": true,
+    "maxStack": 99
+  },
+  {
+    "id": "mp_potion",
+    "name": "Poción de Maná",
+    "type": "consumable",
+    "rarity": "common",
+    "stats": {},
+    "sellPrice": 5,
+    "stackable": true,
+    "maxStack": 99
+  },
+  {
+    "id": "elixir",
+    "name": "Elixir Real",
+    "type": "consumable",
+    "rarity": "rare",
+    "stats": {},
+    "sellPrice": 40,
+    "stackable": true,
+    "maxStack": 10
+  },
+  {
+    "id": "wolf_fang",
+    "name": "Colmillo de Lobo",
+    "type": "material",
+    "rarity": "common",
+    "stats": {},
+    "sellPrice": 3,
+    "stackable": true,
+    "maxStack": 99
+  },
+  {
+    "id": "bat_wing",
+    "name": "Ala de Murciélago",
+    "type": "material",
+    "rarity": "common",
+    "stats": {},
+    "sellPrice": 2,
+    "stackable": true,
+    "maxStack": 99
+  },
+  {
+    "id": "bone",
+    "name": "Hueso Antiguo",
+    "type": "material",
+    "rarity": "common",
+    "stats": {},
+    "sellPrice": 4,
+    "stackable": true,
+    "maxStack": 99
+  },
+  {
+    "id": "anillo_bruma",
+    "name": "Anillo de Bruma",
+    "type": "accessory",
+    "rarity": "uncommon",
+    "stats": {
+      "crit": 3,
+      "spd": 4
+    },
+    "sellPrice": 60,
+    "stackable": false
+  },
+  {
+    "id": "pluma_nocturna",
+    "name": "Pluma Nocturna",
+    "type": "accessory",
+    "rarity": "uncommon",
+    "stats": {
+      "spd": 8
+    },
+    "sellPrice": 55,
+    "stackable": false
+  },
+  {
+    "id": "anillo_duende",
+    "name": "Anillo del Duende",
+    "type": "accessory",
+    "rarity": "uncommon",
+    "stats": {
+      "crit": 5
+    },
+    "sellPrice": 70,
+    "stackable": false
+  },
+  {
+    "id": "colgante_hueso",
+    "name": "Colgante de Hueso",
+    "type": "accessory",
+    "rarity": "rare",
+    "stats": {
+      "def": 4,
+      "hp": 30
+    },
+    "sellPrice": 160,
+    "stackable": false
+  },
+  {
+    "id": "ojo_mago",
+    "name": "Ojo del Mago Oscuro",
+    "type": "accessory",
+    "rarity": "rare",
+    "stats": {
+      "atk": 6,
+      "crit": 4
+    },
+    "sellPrice": 180,
+    "stackable": false
+  },
+  {
+    "id": "sello_monarca",
+    "name": "Sello del Monarca",
+    "type": "accessory",
+    "rarity": "epic",
+    "stats": {
+      "atk": 10,
+      "crit": 6,
+      "spd": 5
+    },
+    "sellPrice": 900,
+    "stackable": false
+  }
 ]

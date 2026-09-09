@@ -64,19 +64,21 @@ export class Player {
     const bCrit = inv?.equipped?.weapon?.stats?.crit || 0;
     const bDef = (inv?.equipped?.armor?.stats?.def || 0);
     const bHp = (inv?.equipped?.armor?.stats?.hp || 0);
+    // v2.2: el accesorio también aporta stats (atk/def/hp/crit/spd)
+    const acc = inv?.equipped?.accessory?.stats || {};
     const s = this.stats;
-    this.atk = s.str * 2 + bAtk;
-    this.def = Math.round(s.vit * 1.25 + bDef);
+    this.atk = s.str * 2 + bAtk + (acc.atk || 0);
+    this.def = Math.round(s.vit * 1.25 + bDef + (acc.def || 0));
     this.matk = s.int * 3;
     this.mdef = s.int * 1.5;
-    this.maxHp = 100 + s.vit * 10 + bHp;
+    this.maxHp = 100 + s.vit * 10 + bHp + (acc.hp || 0);
     this.maxMp = 50 + s.int * 5;
-    this.critChance = 5 + s.per * 1 + s.agi * 0.5 + bCrit; // %
+    this.critChance = 5 + s.per * 1 + s.agi * 0.5 + bCrit + (acc.crit || 0); // %
     this.evasion = 2 + s.per * 2;                          // %
     this.dropBonus = s.per * 1;                            // %
     this.hpRegen = 0.5 + s.vit * 0.5;                      // por segundo
     this.mpRegen = 0.3 + s.int * 0.2;
-    this.speed = C.PLAYER_SPEED * (1 + s.agi * 0.01);
+    this.speed = C.PLAYER_SPEED * (1 + s.agi * 0.01) * (1 + (acc.spd || 0) / 100);
     this.hp = Math.min(this.hp ?? this.maxHp, this.maxHp);
     this.mp = Math.min(this.mp ?? this.maxMp, this.maxMp);
   }

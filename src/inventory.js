@@ -62,6 +62,38 @@ export class Inventory {
     }
   }
 
+  /* v2.2: poción rápida (tecla H / botón POT en móvil) sin abrir el inventario */
+  usarRapido(id) {
+    const p = this.game.player;
+    if (id === 'hp_potion' && p.hp >= p.maxHp) { this.game.ui.toast('❤️ PV al máximo', '#95a5a6'); return false; }
+    if (id === 'mp_potion' && p.mp >= p.maxMp) { this.game.ui.toast('💧 PM al máximo', '#95a5a6'); return false; }
+    const idx = this.slots.findIndex(s => s && s.item.id === id);
+    if (idx === -1) {
+      this.game.ui.toast(id === 'hp_potion' ? '🎒 Sin pociones de vida' : '🎒 Sin pociones de maná', '#e74c3c');
+      return false;
+    }
+    this.useItem(idx);
+    return true;
+  }
+
+  /** ¿Cuántas unidades hay de un item? (para el contador del hotbar) */
+  contarItem(id) {
+    return this.slots.reduce((n, s) => n + (s && s.item.id === id ? s.cantidad : 0), 0);
+  }
+
+  /** v2.2: ordenar la mochila (tipo → rareza → nombre) y reapilar consumibles */
+  ordenar() {
+    const ORDEN = { weapon: 0, armor: 1, accessory: 2, consumable: 3, material: 4 };
+    const RAR = { legendary: 5, epic: 4, rare: 3, uncommon: 2, common: 1 };
+    const cosas = this.slots.filter(Boolean).sort((a, b) =>
+      (ORDEN[a.item.type] - ORDEN[b.item.type]) ||
+      (RAR[b.item.rarity] - RAR[a.item.rarity]) ||
+      a.item.name.localeCompare(b.item.name));
+    this.slots = Array(MAX_INVENTORY_SLOTS).fill(null);
+    for (const s of cosas) this.addItem(s.item, s.cantidad);
+    this.game.ui.toast('🎒 Mochila ordenada', '#9b59b6');
+  }
+
   serialize() {
     return {
       slots: this.slots.map(s => s ? { id: s.item.id, cantidad: s.cantidad } : null),

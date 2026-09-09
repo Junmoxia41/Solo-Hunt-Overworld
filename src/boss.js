@@ -15,7 +15,10 @@ export class Boss extends Enemy {
     this.maxHp = Math.round(this.maxHp * config.hpMult);
     this.hp = this.maxHp;
     this.atk = Math.round(this.atk * config.atkMult);
-    this.expaReward = config.recompensaExp;
+    // FIX v2.2: antes decía "expaReward" (typo) y el oro no se sobreescribía:
+    // los jefes entregaban la EXP/oro de un enemigo normal, no la prometida.
+    this.expReward = config.recompensaExp;
+    this.goldReward = config.recompensaOro;
     this.goldReward = config.recompensaOro;
     this.detectionRange = 9999; // siempre atento
     this.attackRange = 64;

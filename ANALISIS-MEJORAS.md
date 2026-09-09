@@ -113,14 +113,14 @@
 
 ## 🗺️ 8. ROADMAP PRIORIZADO
 
-### 🔴 P1 — QUICK WINS (1 sesión de trabajo)
-1. Fix bug EXP del jefe (B1) — 5 minutos, cambia el balance del juego.
-2. Fix pinch accidental en móvil (B2).
-3. Hotbar con cooldowns visibles + poción rápida (tecla H + botón POT móvil).
-4. Botón de mapa en móvil + tips de carga según dispositivo (B5/B6).
-5. Añadir 6 accesorios al juego (drops de élite/mago + tienda) — llena el slot muerto (B3).
-6. Tooltip comparativo al equipar + botón "ordenar inventario".
-7. Pausa automática al perder foco.
+### 🔴 P1 — QUICK WINS — ✅ COMPLETADO EN v2.2.0 (2026-09-09)
+1. ✅ Fix bug EXP del jefe (B1) — también se arregló el ORO del jefe (mismo bug).
+2. ✅ Fix pinch accidental en móvil (B2).
+3. ✅ Poción rápida (tecla H vida / J maná en PC + botón POT en móvil) y slot H en el hotbar con contador.
+4. ✅ Botón de mapa en móvil + tips de carga según dispositivo (B5/B6).
+5. ✅ 6 accesorios con drops por enemigo, pools de jefes y tienda — el slot ya no está muerto (B3) y suman ATQ/DEF/PV/CRÍT/velocidad.
+6. ✅ Tooltip comparativo al equipar (+7 en verde / −x en rojo vs lo equipado) + botón ORDENAR MOCHILA.
+7. ✅ Pausa automática al perder foco (blur / cambiar de pestaña).
 
 ### 🟡 P2 — PROFUNDIDAD (2–3 sesiones)
 1. Windup/telegraph de ataques enemigos + élites con afijos.

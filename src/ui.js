@@ -44,6 +44,9 @@ export class UI {
         const m = g.audio.toggleMute();
         this.toast(m ? '🔇 Audio silenciado (N)' : '🔊 Audio activado', '#888');
       }
+      // v2.2: poción rápida sin abrir el inventario
+      if (e.code === 'KeyH' && g.state === 'PLAYING') g.inventory.usarRapido('hp_potion');
+      if (e.code === 'KeyJ' && g.state === 'PLAYING') g.inventory.usarRapido('mp_potion');
       if (e.code === 'KeyT' && g.shadows.length) { // cambiar rol de las sombras
         for (const s of g.shadows) s.role = s.role === 'attack' ? 'defend' : 'attack';
         this.toast(`🌑 Sombras en modo: ${g.shadows[0].role === 'attack' ? 'ATAQUE' : 'DEFENSA'} (T)`, '#9b59b6');
@@ -51,6 +54,19 @@ export class UI {
     });
 
     this._buildTouchPad();
+
+    // v2.2: botones táctiles especiales (MAP/POT) — el resto van por InputManager
+    window.addEventListener('sh-touch', e => {
+      const { accion, activo } = e.detail;
+      if (!activo) return;
+      const g = this.game;
+      if (accion === 'map') {
+        if (g.state === 'PLAYING') g.changeState('MAPVIEW');
+        else if (g.state === 'MAPVIEW') g.changeState('PLAYING');
+      } else if (accion === 'pot' && g.state === 'PLAYING') {
+        g.inventory.usarRapido('hp_potion');
+      }
+    });
   }
 
   /* ==================== Toasts ==================== */
@@ -146,7 +162,7 @@ export class UI {
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
-      <div class="title-ver">v2.1.1 · 🎥 zoom: rueda/+/− · I inventario · M mapa · N sonido</div>`;
+      <div class="title-ver">v2.2.0 · H poción · I inventario · M mapa · N sonido · zoom: rueda/+/−</div>`;
     o.querySelector('#bt-continuar').addEventListener('click', async () => {
       this.game.audio.playSFX('menuOk');
       await this._entrarBosque();
@@ -196,7 +212,7 @@ export class UI {
 
   _pintarTienda() {
     const g = this.game, inv = g.inventory;
-    const CATALOGO = ['hp_potion', 'mp_potion', 'rusty_sword', 'leather_armor', 'iron_sword', 'elixir'];
+    const CATALOGO = ['hp_potion', 'mp_potion', 'rusty_sword', 'leather_armor', 'iron_sword', 'elixir', 'anillo_duende', 'colgante_hueso'];
     const o = this._nuevoOverlay();
     o.innerHTML = `
       <div class="rpg-panel" style="max-height:88vh;overflow:auto;min-width:min(92vw,480px)">
@@ -419,7 +435,8 @@ export class UI {
           <div class="papel-col papel-inv">
             <h3>🎒 Mochila (${inv.slots.filter(Boolean).length}/${inv.slots.length})</h3>
             <div class="inv-grid">${inv.slots.map(slotHTML).join('')}</div>
-            <p class="ayuda">Click: equipar arma/armadura · usar consumible</p>
+            <button class="rpg-btn small" id="bt-ordenar" style="margin-top:8px">🧹 ORDENAR MOCHILA</button>
+            <p class="ayuda">Click: equipar/usar · H poción rápida en partida</p>
           </div>
           <div class="papel-col">
             <h3 style="color:#ffd700">📊 Estadísticas</h3>
@@ -456,6 +473,8 @@ export class UI {
         this._inventario();
       });
     });
+    // v2.2: botón de ordenar
+    o.querySelector('#bt-ordenar').onclick = () => { inv.ordenar(); this._inventario(); };
     // clicks en mochila
     o.querySelectorAll('.inv-slot').forEach(el => {
       el.addEventListener('pointerdown', () => {
@@ -471,7 +490,22 @@ export class UI {
         if (!s) return;
         const t = document.createElement('div');
         t.className = 'tooltip'; t.id = 'tt';
-        const st = Object.entries(s.item.stats || {}).map(([k, v]) => `+${v} ${k.toUpperCase()}`).join(' · ');
+        // v2.2: comparativa con lo equipado (verde = mejora, rojo = empeora)
+        const NS = { atk: 'ATQ', def: 'DEF', hp: 'PV', crit: 'CRÍT', spd: 'VEL%' };
+        let st;
+        if (['weapon', 'armor', 'accessory'].includes(s.item.type)) {
+          const eq = inv.equipped[s.item.type];
+          const keys = [...new Set([...Object.keys(s.item.stats || {}), ...Object.keys(eq?.stats || {})])];
+          st = keys.map(k => {
+            const nuevo = s.item.stats?.[k] || 0, actual = eq?.stats?.[k] || 0;
+            const d = nuevo - actual;
+            const color = d > 0 ? '#2ecc71' : d < 0 ? '#e74c3c' : '#95a5a6';
+            const marca = d === 0 ? '' : ` <span style="color:${color}">(${d > 0 ? '+' : ''}${d})</span>`;
+            return `+${nuevo} ${NS[k] || k.toUpperCase()}${marca}`;
+          }).join('<br>') + `<br><span style="color:#888">vs ${eq ? eq.name : 'nada equipado'}</span>`;
+        } else {
+          st = Object.entries(s.item.stats || {}).map(([k, v]) => `+${v} ${NS[k] || k.toUpperCase()}`).join(' · ');
+        }
         t.innerHTML = `<b style="color:${RARITY_COLORS[s.item.rarity]}">${s.item.name}</b><br>${s.item.type} · ${s.item.rarity}<br>${st}<br><span style="color:#888">Venta: ${s.item.sellPrice} oro</span>`;
         const r = el.getBoundingClientRect();
         t.style.left = Math.min(window.innerWidth - 240, r.right + 8) + 'px';
@@ -662,7 +696,9 @@ export class UI {
       { accion: 'heavy', txt: 'HVY', css: '#f1c40f', right: 18,  bottom: 170 },
       { accion: 'skill', txt: 'SKL', css: '#9b59b6', right: 92,  bottom: 28 },
       { accion: 'dash',  txt: 'DSH', css: '#3498db', right: 18,  bottom: 28 },
-      { accion: 'int',   txt: 'INT', css: '#2ecc71', right: 92,  bottom: 96 }
+      { accion: 'int',   txt: 'INT', css: '#2ecc71', right: 92,  bottom: 96 },
+      { accion: 'map',   txt: 'MAP', css: '#8bc34a', right: 92,  bottom: 170 },
+      { accion: 'pot',   txt: 'POT', css: '#e57373', right: 166, bottom: 28 }
     ];
     for (const d of defs) {
       const b = document.createElement('div');
@@ -732,15 +768,16 @@ export class UI {
       ctx.font = `9px ${FONT}`;
     }
 
-    /* --- Hotbar --- */
-    const slot = 46, gap = 8, total = slot * 4 + gap * 3;
-    const hx = W / 2 - total / 2, hy = H - slot - 14;
+    /* --- Hotbar (en PC incluye H = poción de vida rápida) --- */
     const defs = [
       { k: 'Z', cd: p.attackCooldown, max: 0.3, c: '#e74c3c' },
       { k: 'X', cd: p.heavyCd, max: HEAVY_ATTACK_COOLDOWN, c: '#f1c40f', mp: 15 },
       { k: '⇧', cd: p.dashCooldown, max: DASH_COOLDOWN, c: '#3498db', mp: 10 },
       { k: 'C', cd: p.skillCd, max: SKILL_COOLDOWN, c: '#9b59b6', mp: 30 }
     ];
+    if (!g.input.isMobile) defs.push({ k: 'H', cd: 0, max: 1, c: '#2ecc71', pot: true });
+    const slot = 46, gap = 8, total = slot * defs.length + gap * (defs.length - 1);
+    const hx = W / 2 - total / 2, hy = H - slot - 14;
     defs.forEach((d, i) => {
       const x = hx + i * (slot + gap);
       ctx.fillStyle = 'rgba(15,15,35,0.85)';
@@ -764,6 +801,14 @@ export class UI {
         ctx.fillStyle = '#7fb2ff';
         ctx.font = `7px ${FONT}`;
         ctx.fillText('PM', x + slot / 2, hy + slot - 10);
+      }
+      if (d.pot) { // contador de pociones de vida
+        const n = g.inventory.contarItem('hp_potion');
+        if (n === 0) { ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fillRect(x, hy, slot, slot); }
+        ctx.font = `8px ${FONT}`;
+        ctx.fillStyle = n > 0 ? '#fff' : '#777';
+        ctx.textAlign = 'right';
+        ctx.fillText('x' + n, x + slot - 5, hy + slot - 7);
       }
       ctx.font = `9px ${FONT}`;
     });

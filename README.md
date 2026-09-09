@@ -1,6 +1,16 @@
 # ⚔️ Solo Hunt: Overworld — v2 (Action RPG 2D, JavaScript Vanilla)
 
-## 🎥 v2.1.1 — Cámara con zoom, colisiones y profundidad (actual)
+## ✨ v2.2.0 — P1: fixes de balance y calidad de vida (actual)
+- **FIX jefes**: entregan la EXP y el oro prometidos (antes un bug les daba la recompensa de un enemigo normal).
+- **FIX móvil**: el zoom por pellizco ya no se dispara al apoyar un segundo dedo junto al joystick.
+- **Poción rápida**: tecla **H** (vida) y **J** (maná) en PC · botón **POT** en móvil · slot H con contador en el hotbar.
+- **Botón MAP** en móvil para el mapa completo.
+- **6 accesorios nuevos** (anillos, colgante, pluma, ojo, sello) con drops, botín de jefes y tienda; suman ATQ/DEF/PV/CRÍT/velocidad.
+- **Tooltip comparativo** al equipar (mejora verde / empeora roja) y botón **ORDENAR MOCHILA**.
+- **Pausa automática** al perder el foco de la ventana (alt-tab).
+- Tips de carga adaptados a PC/móvil. Service Worker `sh-v2-2.2.0`.
+
+## 🎥 v2.1.1 — Cámara con zoom, colisiones y profundidad
 - **Cámara con zoom real**: el personaje se ve más de cerca (x1.85 en PC, x2.05 en móvil). Zoom suave con **rueda del ratón**, teclas **+/−** y **pellizco** en móvil. Límites x1.15–x3.25 y la vista aparece dibujada en el minimapa.
 - **Árboles con colisión de ÁREA (tronco)**: solo el tronco bloquea; puedes rodear el árbol y acercarte a la copa. El orden de dibujo compara los PIES de cada entidad contra la base del tronco: por delante te ves encima del árbol, por detrás te tapa la copa.
 - **Rocas**: colisionan (tile sólido) pero se dibujan SIEMPRE debajo del jugador.
@@ -26,7 +36,9 @@ guardado en **localStorage** (`soloHuntSaveV2`), módulos ES6, `requestAnimation
 | Mapa mundial | M | — |
 | Pausa | Esc | — |
 | Silencio | N | — |
-| Zoom de cámara | Rueda del ratón / + y − | Pellizco con dos dedos |
+| Zoom de cámara | Rueda del ratón / + y − | Pellizco con dos dedos (no el del joystick) |
+| Poción rápida | H (vida) · J (maná) | Botón POT |
+| Mapa completo | M | Botón MAP |
 | Rol sombras (ataque/defensa) | T | — |
 
 ## ✨ Milestone 1 (actual) — Overworld jugable

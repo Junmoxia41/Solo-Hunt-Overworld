@@ -120,18 +120,28 @@ export class InputManager {
     });
   }
 
-  /* Pellizco con dos dedos = zoom de cámara en móvil */
+  /* Pellizco con dos dedos = zoom de cámara en móvil.
+   * FIX v2.2: solo cuentan los dedos que NO controlan el joystick —
+   * antes, apoyar un segundo dedo cualquiera junto al joystick
+   * hacía zoom sin querer. */
   _trackPinch(touches) {
     const cam = this.game.camera;
     if (!cam) return;
-    if (touches.length >= 2) {
-      const dx = touches[0].clientX - touches[1].clientX;
-      const dy = touches[0].clientY - touches[1].clientY;
-      const d = Math.hypot(dx, dy);
-      if (!this._pinch) this._pinch = { d0: d, zoom0: cam.zoomTarget };
-      else if (d > 12) cam.setZoom(this._pinch.zoom0 * (d / this._pinch.d0));
-    } else {
-      this._pinch = null;
+    // dedos libres: todos menos el que arrastra el joystick
+    const libres = [...touches].filter(t => t.identifier !== this.joy.id);
+    if (libres.length >= 2 && !this._pinch) {
+      const [a, b] = libres;
+      this._pinch = {
+        ids: [a.identifier, b.identifier],
+        d0: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY),
+        zoom0: cam.zoomTarget
+      };
+    } else if (this._pinch) {
+      const a = libres.find(t => t.identifier === this._pinch.ids[0]);
+      const b = libres.find(t => t.identifier === this._pinch.ids[1]);
+      if (!a || !b) { this._pinch = null; return; } // un dedo se fue: fin
+      const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+      if (d > 12) cam.setZoom(this._pinch.zoom0 * (d / this._pinch.d0));
     }
   }
 

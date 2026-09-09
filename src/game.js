@@ -165,6 +165,12 @@ export class Game {
       if (this.state === 'PLAYING' && !this.dungeon) { SaveManager.save(this); this.ui.toast('💾 Guardado automático', '#888'); }
     }, AUTOSAVE_INTERVAL);
 
+    // Pausa automática al perder el foco (alt-tab / cambiar de pestaña / minimizar)
+    window.addEventListener('blur', () => { if (this.state === 'PLAYING') this.changeState('PAUSED'); });
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && this.state === 'PLAYING') this.changeState('PAUSED');
+    });
+
     this.changeState('MENU');
   }
 

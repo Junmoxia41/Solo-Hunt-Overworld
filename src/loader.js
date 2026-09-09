@@ -9,14 +9,24 @@ import { randomInt } from './utils.js';
 
 const CHARS = ['kaito', 'rin', 'yuna', 'grom', 'sora', 'dante', 'mika', 'roku', 'elena', 'atlas', 'nix', 'hana'];
 
-const TIPS = [
-  'Consejo: el dash te vuelve invencible durante su salto (Shift / DSH)',
-  'Consejo: extrae sombras pulsando E sobre los cadáveres que brillan en morado',
-  'Consejo: los magos oscuros se teletransportan si te les acercas mucho',
+// v2.2: consejos distintos según el dispositivo (táctil vs teclado)
+const ES_MOVIL = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+const TIPS = ES_MOVIL ? [
+  'Consejo: el botón DSH te vuelve invencible durante el salto',
+  'Consejo: extrae sombras con el botón INT sobre cadáveres morados',
+  'Consejo: el botón POT bebe una poción de vida al instante',
+  'Consejo: el botón MAP abre el mapa completo del bosque',
+  'Consejo: junta dos dedos (que no sean el del joystick) para hacer zoom',
   'Consejo: los jefes tienen 3 fases. ¡Cuidado con su furia final!',
-  'Consejo: completa mazmorras rápido para un bonus de oro por tiempo',
-  'Consejo: pulsa M en partida para ver el mapa completo del bosque',
-  'Consejo: rueda del ratón o +/− para acercar la cámara · pellizco en móvil'
+  'Consejo: completa mazmorras rápido para un bonus de oro por tiempo'
+] : [
+  'Consejo: el dash (Shift) te vuelve invencible durante su salto',
+  'Consejo: extrae sombras pulsando E sobre los cadáveres que brillan en morado',
+  'Consejo: H bebe una poción de vida al instante · J de maná',
+  'Consejo: pulsa M para ver el mapa completo del bosque',
+  'Consejo: rueda del ratón o +/− para acercar la cámara',
+  'Consejo: los jefes tienen 3 fases. ¡Cuidado con su furia final!',
+  'Consejo: completa mazmorras rápido para un bonus de oro por tiempo'
 ];
 
 /**
