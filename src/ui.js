@@ -162,7 +162,7 @@ export class UI {
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
-      <div class="title-ver">v2.3.0 · misiones · élites · refinar equipo · H poción · M mapa</div>`;
+      <div class="title-ver">v2.4.0 · EL VOLUMEN · 4 Folios · H poción · M mapa · N sonido</div>`;
     o.querySelector('#bt-continuar').addEventListener('click', async () => {
       this.game.audio.playSFX('menuOk');
       await this._entrarBosque();
