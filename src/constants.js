@@ -6,8 +6,9 @@ export const CANVAS_WIDTH  = () => window.innerWidth;   // función: el canvas e
 export const CANVAS_HEIGHT = () => window.innerHeight;
 
 export const TILE_SIZE   = 32;
-export const MAP_W       = 80;   // mapa en tiles
+export const MAP_W       = 80;   // mazmorras (tiles)
 export const MAP_H       = 80;
+export const WORLD_SIZE  = 160; // EL VOLUMEN: mundo overworld (4 Folios de 80x80)
 export const FPS_TARGET  = 60;
 export const GRAVITY     = 0;    // top-down (se usa leve en partículas)
 

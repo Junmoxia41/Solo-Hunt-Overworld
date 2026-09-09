@@ -123,7 +123,7 @@ export class UI {
     const wrap = document.createElement('div');
     wrap.className = 'rpg-panel'; wrap.style.textAlign = 'center';
     wrap.innerHTML = `
-      <h2>🗺️ MAPA — ${m.name === 'mazmorra' ? `MAZMORRA ${g.dungeon?.rango || ''}` : 'BOSQUE INICIAL'}</h2>
+      <h2>🗺️ MAPA — ${m.name === 'mazmorra' ? `MAZMORRA ${g.dungeon?.rango || ''}` : 'EL VOLUMEN'}</h2>
       <div style="display:flex;justify-content:center;gap:14px;font-size:8px;margin-bottom:8px">
         <span style="color:#fff">● tú</span><span style="color:#2ecc71">● NPC</span><span style="color:#8bc34a">● portal E</span><span style="color:#ff9800">● portal S</span>
       </div>`;
@@ -157,7 +157,7 @@ export class UI {
     const info = SaveManager.getSaveInfo();
     o.innerHTML = `
       <div class="title-logo">SOLO HUNT</div>
-      <div class="title-sub">OVERWORLD ✦ REMASTER</div>
+      <div class="title-sub">EL VOLUMEN ✦ FOLIO I</div>
       <button class="rpg-btn" id="bt-continuar" ${info ? '' : 'disabled'}>▶ Continuar ${info ? `(Nv. ${info.level})` : ''}</button>
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
@@ -201,7 +201,7 @@ export class UI {
     });
     g.camera.snap(g.player, g.currentMap);
     g.changeState('PLAYING');
-    this.toast('🌲 Zona: Bosque Inicial — busca al Guía del Gremio', '#2ecc71', 3600);
+    this.toast('📖 Folio I: Bosque de Penumbra — Orlen te espera en el campamento', '#2ecc71', 4200);
   }
 
   /* ==================== Tienda del Mercader Krow ==================== */

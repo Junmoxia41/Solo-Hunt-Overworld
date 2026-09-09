@@ -1,20 +1,19 @@
 {
   "guia_gremio": {
-    "nombre": "Guía del Gremio",
+    "nombre": "Orlen, el Archive",
     "emoji": "🧙",
     "lineas": [
-      "Bienvenido al Bosque Inicial, despertado. Los portales devolvieron a las bestias más hambrientas de lo normal…",
-      "Usa Z o toca ATK para golpear. X es tu golpe pesado. ⇧/DSH para esquivar, y C/C con PM libera tu Shadow Strike.",
-      "Cuando un cadáver brille en morado, extráelo con [E]: algunas almas aceptan servir a un Elegido. Eso es… ARISE."
+      "Despertaste bajo la lluvia sin nombre y sin historia, cazador. En El Volumen, a eso lo llaman… página en blanco. Y las páginas en blanco, o son el comienzo de todo… o el final.",
+      "Este mundo fue escrito. Cada bosque es un recuerdo; cada bestia, un recuerdo que se niega a desaparecer. Cázalos: de sus restos sale la tinta que mantiene legibles los Folios.",
+      "Cuando un cadáver brille en morado, llama a su memoria con [E]. Tú puedes sostener la historia de otro sin borrarte: es lo único que te hace especial. Y lo único que nos asusta de ti."
     ]
   },
   "mercader": {
-    "nombre": "Mercader Krow",
+    "nombre": "Krow, el Cuervo",
     "emoji": "🧑‍💼",
     "lineas": [
-      "Equipo nuevo, pociones frescas… y compro todo lo que arrastres del bosque. Sin preguntas, cazador.",
-      "Recuerda: un cazador que no se equipa, vuelve a casa en un saco. ¿Qué será hoy?"
+      "Krow compra recuerdos cuantos: colmillos, alas, huesos. Todo lo que la Pluma escribió tiene valor… para quien sepa leerlo, ja.",
+      "¿Que si soy del Volumen? Digamos que soy una palabra que ella tachó… y que sobrevivió al tachón. Por eso regateo tan bien: ya no le debo nada al texto."
     ]
   }
 }
-

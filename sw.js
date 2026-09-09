@@ -3,7 +3,7 @@
    Estrategia: PRECACHE total al instalar + cache-first en fetch.
    El juego es 100% offline tras la primera visita.
    ============================================================ */
-const CACHE = 'sh-v2-2.3.0';
+const CACHE = 'sh-v2-2.4.0';
 
 // Todo lo necesario para jugar sin conexión
 const PRECACHE = [
@@ -32,7 +32,10 @@ const PRECACHE = [
   './assets/chars/lado_nix.png', './assets/chars/lado_hana.png',
   './assets/sprites/lobo.png', './assets/sprites/murcielago.png',
   './assets/sprites/nomuerto.png', './assets/sprites/duende.png', './assets/sprites/mago.png',
-  './assets/tiles/arbol.png', './assets/tiles/flor.png', './assets/tiles/roca.png'
+  './assets/tiles/arbol.png', './assets/tiles/flor.png', './assets/tiles/roca.png',
+  './assets/tiles/pradera_arbol.png', './assets/tiles/pradera_flor.png',
+  './assets/tiles/cementerio_arbol.png', './assets/tiles/cementerio_tumba.png',
+  './assets/tiles/cenaga_arbol.png', './assets/tiles/cenaga_flor.png'
 ];
 
 self.addEventListener('install', e => {

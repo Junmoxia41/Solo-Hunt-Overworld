@@ -1,12 +1,142 @@
 [
-  { "id": "primeros_colmillos", "nombre": "Primeros colmillos", "descripcion": "El Guía del Gremio quiere pruebas: caza 5 lobos sombríos del bosque.", "tipo": "kill", "objetivoTipo": "lobo", "objetivo": 5, "recompensa": { "exp": 100, "oro": 50 } },
-  { "id": "alas_en_la_noche", "nombre": "Alas en la noche", "descripcion": "Los murciélagos ciegos acosan el camino del mercader. Derriba 4.", "tipo": "kill", "objetivoTipo": "murcielago", "objetivo": 4, "recompensa": { "exp": 140, "oro": 70, "item": { "id": "hp_potion", "cantidad": 2 } } },
-  { "id": "huesos_del_pasado", "nombre": "Huesos del pasado", "descripcion": "Reúne 3 huesos antiguos de los caídos para estudiar la plaga de sombras.", "tipo": "collect", "objetivoTipo": "bone", "objetivo": 3, "recompensa": { "exp": 160, "oro": 90 } },
-  { "id": "los_que_no_descansan", "nombre": "Los que no descansan", "descripcion": "Los no-muertos se arrastran desde el lago. Devuélvelos al suelo: 3.", "tipo": "kill", "objetivoTipo": "nomuerto", "objetivo": 3, "recompensa": { "exp": 220, "oro": 120 } },
-  { "id": "flechas_errantes", "nombre": "Flechas errantes", "descripcion": "Una banda de duendes arqueros asalta a los viajeros. Caza 4.", "tipo": "kill", "objetivoTipo": "duende", "objetivo": 4, "recompensa": { "exp": 260, "oro": 150, "item": { "id": "mp_potion", "cantidad": 2 } } },
-  { "id": "colmillos_para_krow", "nombre": "Colmillos para Krow", "descripcion": "El Mercader Krow paga bien: tráele 5 colmillos de lobo.", "tipo": "collect", "objetivoTipo": "wolf_fang", "objetivo": 5, "recompensa": { "exp": 280, "oro": 220 } },
-  { "id": "saberes_ocultos", "nombre": "Saberes ocultos", "descripcion": "Los magos oscuros profanaron el bosque. Silencia a 2 de ellos.", "tipo": "kill", "objetivoTipo": "mago", "objetivo": 2, "recompensa": { "exp": 380, "oro": 260, "item": { "id": "elixir", "cantidad": 1 } } },
-  { "id": "primer_portal", "nombre": "El primer portal", "descripcion": "Demuestra tu valor: completa la mazmorra del portal Rango E.", "tipo": "dungeon", "objetivoTipo": "E", "objetivo": 1, "recompensa": { "exp": 500, "oro": 300, "item": { "id": "iron_sword", "cantidad": 1 } } },
-  { "id": "prueba_de_fuego", "nombre": "Prueba de fuego", "descripcion": "El Gremio exige más: completa la mazmorra Rango D.", "tipo": "dungeon", "objetivoTipo": "D", "objetivo": 1, "recompensa": { "exp": 900, "oro": 550 } },
-  { "id": "corona_sombría", "nombre": "La corona sombría", "descripcion": "Leyenda viva: derrota al Mago Antiguo Profanado (Rango C) y reclama tu título.", "tipo": "dungeon", "objetivoTipo": "C", "objetivo": 1, "recompensa": { "exp": 1800, "oro": 900, "item": { "id": "colgante_hueso", "cantidad": 1 } } }
+  {
+    "id": "primeros_colmillos",
+    "nombre": "Primeros colmillos",
+    "descripcion": "«El primer recuerdo que hay que domesticar es el miedo.» Caza 5 lobos sombríos del Folio I.",
+    "tipo": "kill",
+    "objetivoTipo": "lobo",
+    "objetivo": 5,
+    "recompensa": {
+      "exp": 100,
+      "oro": 50
+    }
+  },
+  {
+    "id": "alas_en_la_noche",
+    "nombre": "Alas en la noche",
+    "descripcion": "Los murciélagos son pedazos de la primera noche escrita. Derriba 4 antes de que desteñan el camino de Krow.",
+    "tipo": "kill",
+    "objetivoTipo": "murcielago",
+    "objetivo": 4,
+    "recompensa": {
+      "exp": 140,
+      "oro": 70,
+      "item": {
+        "id": "hp_potion",
+        "cantidad": 2
+      }
+    }
+  },
+  {
+    "id": "huesos_del_pasado",
+    "nombre": "Huesos del pasado",
+    "descripcion": "Cada hueso antiguo guarda un nombre borrado. Reúne 3: Orlen quiere leerlos en voz alta.",
+    "tipo": "collect",
+    "objetivoTipo": "bone",
+    "objetivo": 3,
+    "recompensa": {
+      "exp": 160,
+      "oro": 90
+    }
+  },
+  {
+    "id": "los_que_no_descansan",
+    "nombre": "Los que no descansan",
+    "descripcion": "En el Folio III, los borrados caminan. Devuélvelos al suelo: 3 no-muertos. Es casi un favor.",
+    "tipo": "kill",
+    "objetivoTipo": "nomuerto",
+    "objetivo": 3,
+    "recompensa": {
+      "exp": 220,
+      "oro": 120
+    }
+  },
+  {
+    "id": "flechas_errantes",
+    "nombre": "Flechas errantes",
+    "descripcion": "Los duendes forrajean palabras del Mediodía Eterno. Si comen suficiente, ese día por fin se acabará. Caza 4.",
+    "tipo": "kill",
+    "objetivoTipo": "duende",
+    "objetivo": 4,
+    "recompensa": {
+      "exp": 260,
+      "oro": 150,
+      "item": {
+        "id": "mp_potion",
+        "cantidad": 2
+      }
+    }
+  },
+  {
+    "id": "colmillos_para_krow",
+    "nombre": "Colmillos para Krow",
+    "descripcion": "Krow paga bien los colmillos de lobo: «tinta de primera», dice. Tráele 5 y no preguntes para qué.",
+    "tipo": "collect",
+    "objetivoTipo": "wolf_fang",
+    "objetivo": 5,
+    "recompensa": {
+      "exp": 280,
+      "oro": 220
+    }
+  },
+  {
+    "id": "saberes_ocultos",
+    "nombre": "Saberes ocultos",
+    "descripcion": "Los magos oscuros leen el libro al revés. Silencia a 2 antes de que encuentren tu página… vacía.",
+    "tipo": "kill",
+    "objetivoTipo": "mago",
+    "objetivo": 2,
+    "recompensa": {
+      "exp": 380,
+      "oro": 260,
+      "item": {
+        "id": "elixir",
+        "cantidad": 1
+      }
+    }
+  },
+  {
+    "id": "primer_portal",
+    "nombre": "El primer portal",
+    "descripcion": "Los Recuerdos Sellados disuelven a los narradores. A ti no. Entra al portal Rango E y vuelve con lo que veas.",
+    "tipo": "dungeon",
+    "objetivoTipo": "E",
+    "objetivo": 1,
+    "recompensa": {
+      "exp": 500,
+      "oro": 300,
+      "item": {
+        "id": "iron_sword",
+        "cantidad": 1
+      }
+    }
+  },
+  {
+    "id": "prueba_de_fuego",
+    "nombre": "Prueba de fuego",
+    "descripcion": "El Mediodía Eterno esconde un recuerdo más amargo. Completa la mazmorra Rango D… y no le cuentes a Orlen lo que susurra.",
+    "tipo": "dungeon",
+    "objetivoTipo": "D",
+    "objetivo": 1,
+    "recompensa": {
+      "exp": 900,
+      "oro": 550
+    }
+  },
+  {
+    "id": "corona_sombría",
+    "nombre": "La corona sombría",
+    "descripcion": "Derrota al Mago Antiguo Profanado (Rango C). Guarda la primera sílaba del nombre de la Pluma. No la pronuncies.",
+    "tipo": "dungeon",
+    "objetivoTipo": "C",
+    "objetivo": 1,
+    "recompensa": {
+      "exp": 1800,
+      "oro": 900,
+      "item": {
+        "id": "colgante_hueso",
+        "cantidad": 1
+      }
+    }
+  }
 ]

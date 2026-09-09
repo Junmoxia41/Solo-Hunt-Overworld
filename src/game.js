@@ -18,6 +18,7 @@ import { Inventory } from './inventory.js';
 import { DialogueManager } from './dialogue.js';
 import { QuestGuia } from './quest.js';
 import { distEnt, angleVec, randomInt } from './utils.js';
+import { BIOMAS } from './world.js';
 
 export class Game {
   constructor() {
@@ -98,8 +99,8 @@ export class Game {
   async init() {
     this.resize();
 
-    // Progreso: 4 JSON + 12 frontales + 12 perfiles + 5 enemigos + 3 tiles + 4 key-arts
-    this._configurarCarga(40, CARGA_MS.boot);
+    // Progreso: 4 JSON + 12 frontales + 12 perfiles + 5 enemigos + 9 tiles + 4 key-arts
+    this._configurarCarga(46, CARGA_MS.boot);
 
     // Datos JSON (enemigos, items, misiones, diálogos)
     const [enemiesData, itemsData, questsData, dialoguesData] = await Promise.all([
@@ -108,7 +109,7 @@ export class Game {
       fetch('data/quests.json').then(r => { this._tickCarga(); return r.json(); }),
       fetch('data/dialogues.json').then(r => { this._tickCarga(); return r.json(); })
     ]);
-    this.data = { enemies: enemiesData, items: itemsData, quests: questsData, dialogues: dialoguesData };
+    this.data = { enemies: enemiesData, items: itemsData, quests: questsData, dialogues: dialoguesData, biomas: BIOMAS };
 
     // Sprites de los 12 cazadores: frontal + PERFIL (para caminar mirando a los lados)
     const CHARS = ['kaito','rin','yuna','grom','sora','dante','mika','roku','elena','atlas','nix','hana'];
@@ -118,8 +119,10 @@ export class Game {
     for (const t of ['lobo','murcielago','nomuerto','duende','mago']) {
       this.assets['mob_' + t] = await this.loadImage(`assets/sprites/${t}.png`);
     }
-    // Tiles decorativos (árbol/flor/roca remasterizados)
-    for (const d of ['arbol','flor','roca']) {
+    // Tiles decorativos de los 4 Folios (bosque, pradera, cementerio, ciénaga)
+    const TILES = ['arbol','flor','roca','pradera_arbol','pradera_flor','cementerio_arbol',
+                   'cementerio_tumba','cenaga_arbol','cenaga_flor'];
+    for (const d of TILES) {
       this.assets['tile_' + d] = await this.loadImage(`assets/tiles/${d}.png`);
     }
     // Los 4 key-arts de carga (el menú elige uno al azar; los loaders también)
@@ -212,7 +215,7 @@ export class Game {
       this.combat.checkCollisions();
       this.camera.update(dt, this.player, this.currentMap);
       this.dungeon?.update(dt); // cuenta atrás, portal de salida, jefe
-      if (!this.dungeon) this._poblacionEnemigos(dt);
+      if (!this.dungeon) { this._poblacionEnemigos(dt); this._checkBioma(); }
       this._limpiar();
     }
     // Las partículas y números de daño SIEMPRE avanzan (también en pausa quedan preciosas)
@@ -303,17 +306,32 @@ export class Game {
     this._spawnT = 0;
     const vivos = this.enemies.filter(e => !e.isDead).length;
     if (vivos >= 14) return;
-    const tipo = ['lobo','lobo','murcielago','nomuerto','duende','mago'][randomInt(0, 5)];
     const elite = Math.random() < 0.10; // v2.3: 10% de élites
-    // aparecer fuera de la vista del jugador
+    // aparecer fuera de la vista del jugador, con la fauna del Folio local
     for (let i = 0; i < 20; i++) {
       const x = this.player.x + randomInt(-1, 1) * randomInt(380, 700);
       const y = this.player.y + randomInt(-1, 1) * randomInt(380, 700);
       if (x > 32 && y > 32 && x < this.currentMap.pixelW - 32 && y < this.currentMap.pixelH - 32 && !this.currentMap.isSolid(x + 16, y + 16)) {
-        this.spawnEnemy(tipo, x, y, 1, elite);
+        const bid = this.currentMap.biomaEnPixel(x, y);
+        const B = this.data?.biomas?.[bid];
+        if (!B) break;
+        const tipo = B.faunaRespawn[randomInt(0, B.faunaRespawn.length - 1)];
+        this.spawnEnemy(tipo, x, y, B.nivelSpawn, elite);
         break;
       }
     }
+  }
+
+  /** v2.4: aviso al entrar en un Folio nuevo (nombre + niveles) */
+  _checkBioma() {
+    const bid = this.currentMap.biomaEnPixel(this.player.x, this.player.y);
+    if (bid === this._biomaActual) return;
+    const B = this.data?.biomas?.[bid];
+    if (this._biomaActual !== undefined && B) {
+      this.ui.toast(`📖 Folio ${B.folio} — ${B.nombre} (nivel ${B.niveles})`, '#c7d2fe', 3400);
+      this.audio.playSFX('quest');
+    }
+    this._biomaActual = bid;
   }
 
   _limpiar() {
@@ -328,18 +346,22 @@ export class Game {
     }
   }
 
+  /** Población inicial de EL VOLUMEN: cada Folio llena su propia fauna */
   spawnOleadaInicial() {
-    const defs = [
-      ['lobo', 8], ['murcielago', 4], ['nomuerto', 2], ['duende', 2], ['mago', 1]
-    ];
-    for (const [tipo, n] of defs) {
-      for (let i = 0; i < n; i++) {
-        for (let t = 0; t < 25; t++) {
-          const x = randomInt(4, this.currentMap.width - 4) * 32;
-          const y = randomInt(4, this.currentMap.height - 4) * 32;
-          if (!this.currentMap.isSolid(x, y) && Math.hypot(x - this.player.x, y - this.player.y) > 260) {
-            this.spawnEnemy(tipo, x, y, 1, Math.random() < 0.08);
-            break;
+    const m = this.currentMap;
+    for (const bid of Object.keys(this.data?.biomas || {})) {
+      const B = this.data.biomas[bid];
+      for (const [tipo, n] of B.fauna) {
+        for (let i = 0; i < n; i++) {
+          for (let t = 0; t < 40; t++) {
+            const x = randomInt(4, m.width - 4) * 32;
+            const y = randomInt(4, m.height - 4) * 32;
+            const deOtroFolio = m.biomaEnPixel(x, y) !== bid;
+            if (deOtroFolio) continue;
+            if (!m.isSolid(x, y) && Math.hypot(x - this.player.x, y - this.player.y) > 260) {
+              this.spawnEnemy(tipo, x, y, B.nivelSpawn, Math.random() < 0.08);
+              break;
+            }
           }
         }
       }

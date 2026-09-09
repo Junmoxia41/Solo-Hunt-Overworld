@@ -1,6 +1,20 @@
 # ⚔️ Solo Hunt: Overworld — v2 (Action RPG 2D, JavaScript Vanilla)
 
-## ⚔️ v2.3.0 — P2: profundidad de combate y progresión (actual)
+## 🌍 v2.4.0 — P3-WORLD: EL VOLUMEN (actual)
+- **Historia original** (ver `HISTORIA.md`): el mundo es un libro que se escribió a sí mismo; cada bioma es el "Folio" de un recuerdo. La amenaza no es un señor oscuro: es **La Tinta Blanca**, la autora arrepentida que borra su propia obra. Tú eres **la Página en Blanco** — sin pasado, capaz de sostener sombras ajenas (ARISE) e inmune a los Recuerdos Sellados.
+- **Mundo 160×160 (4× el tamaño anterior)** con **4 biomas/Folios jugables**:
+  - **Folio I — Bosque de Penumbra** (1-4) · portal E
+  - **Folio II — Praderas del Mediodía Eterno** (4-8) · hierba dorada, girasoles, robles dorados · portal D
+  - **Folio III — Campos de los Nombres** (6-10) · hierba pálida, niebla rasante, árboles muertos y **tumbas con colisión** · portal C
+  - **Folio IV — Ciénaga de los Espejos** (9-13) · pantanos negros, sauces llorones, flores bioluminiscentes · portal S
+- Bordes **orgánicos** entre biomas (ruido determinista), caminos cruzados que conectan los 4 Folios, aviso "📖 Folio…" al entrar en cada región.
+- **Tiles nuevos por bioma** (árboles, flores, tumbas) + suelo/tierra/agua con paleta propia por Folio y detalles: briznas doradas, niebla animada, lodo.
+- **Fauna por Folio** con niveles de zona (cementerio nv.8, ciénaga nv.11…) — el respawn también es del bioma local.
+- Diálogos reescritos con el lore (Orlen el Archive, Krow el Cuervo) y las 10 misiones reescritas como "recuerdos".
+- Arquitectura data-driven (`src/world.js`): añadir el Folio V+ es añadir su entrada + tiles. Diseño completo de los 10 Folios en `MUNDO.md`.
+- Service Worker `sh-v2-2.4.0`.
+
+## ⚔️ v2.3.0 — P2: profundidad de combate y progresión
 - **Ataques telegrafiados**: los enemigos cargan su golpe (anillo blanco que se cierra) antes de atacar — esquivable con dash o alejándote. Los jefes también (melé y carga del anillo de proyectiles).
 - **Élites con afijos** (★): veloz, escudado, vampírico o explosivo. ×2.2 vida, ×2.5 EXP/oro, aura de color y 25% más grandes. 10% en el bosque, 15% en mazmorras. El explosivo detona al morir: ¡aléjate de la mecha!
 - **Cadena de 10 misiones** del Guía del Gremio (cazar / recolectar / completar mazmorras E-D-C) con recompensas crecientes y objetos. Rastreador en el HUD y **flecha guía** al objetivo.
