@@ -47,6 +47,7 @@ export class Player {
     this.gold = 0;
     this.totalKills = 0;
     this.facingSign = 1; // flip visual del sprite
+    this._pie = 40;      // ancla de profundidad: la suela del sprite (y+40)
 
     // Animación (bobbing, el sprite es una imagen completa)
     this.animTimer = randomFloat(0, 5);

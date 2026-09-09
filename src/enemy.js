@@ -50,6 +50,7 @@ export class Enemy {
     this.animT = randomFloat(0, 9);
     this.wanderT = 0; this.wanderX = 0; this.wanderY = 0;
     this.retroceder = 0; // murciélago: picada y retroceso
+    this._pie = 37;      // ancla de profundidad: la suela del sprite (y+37)
   }
 
   /* ---------- Utilidades de movimiento con colisión de mapa ---------- */

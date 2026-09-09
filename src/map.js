@@ -34,15 +34,24 @@ export class Mapa {
     for (const p of this.portalesPos) this._limpiarArea(p.tx, p.ty, 2); // plaza despejada
     this._limpiarArea(40, 40, 3); // zona de spawn central despejada
 
-    // Capa ALTA (árboles y rocas): se dibuja mezclada con las entidades
-    // en orden de profundidad (y) para que el jugador pase POR DETRÁS.
+    // Colisiones de TRONCO (área pequeña y baja) + capa ALTA de árboles.
+    // Las ROCAS sí colisionan (tile sólido) pero se dibujan SIEMPRE por
+    // debajo de las entidades: son bajas, nunca deben tapar al jugador.
+    this.tronco = {}; // índice de tile -> rect del tronco {x,y,w,h}
     this.tall = [];
     for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) {
-      const d = this.deco[ty * MAP_W + tx];
-      if (d === 'arbol') this.tall.push({ tipo: 'arbol', x: tx * TILE_SIZE + 16, baseY: ty * TILE_SIZE + 30, ancho: 46, alto: 65 });
-      else if (d === 'roca') this.tall.push({ tipo: 'roca', x: tx * TILE_SIZE + 16, baseY: ty * TILE_SIZE + 25, ancho: 28, alto: 24 });
+      if (this.deco[ty * MAP_W + tx] === 'arbol') {
+        this.tall.push({ tipo: 'arbol', x: tx * TILE_SIZE + 16, baseY: ty * TILE_SIZE + 30, ancho: 46, alto: 65 });
+        this.tronco[ty * MAP_W + tx] = { x: tx * TILE_SIZE + 10, y: ty * TILE_SIZE + 8, w: 12, h: 22 };
+      }
     }
     this.tall.sort((a, b) => a.baseY - b.baseY);
+    // Envoltorios ESTABLES para el orden de profundidad (evita crear
+    // ~400 objetos por frame: eso provocaba tirones de memoria)
+    this._tallWrap = this.tall.map(it => ({
+      y: it.baseY,
+      o: { x: it.x - 32, y: it.baseY - 96, width: 64, height: 120, render: c => this.dibujarAlto(c, it) }
+    }));
   }
 
   _generar(seed) {
@@ -98,14 +107,25 @@ export class Mapa {
     return this.solid[ty * MAP_W + tx] !== 0;
   }
 
-  /** ¿Colisiona un rectángulo contra tiles sólidos? (recorre TODOS los
-   *  tiles que toca el rectángulo: sin puntos ciegos entre esquinas) */
+  /** ¿Colisiona un rectángulo contra el mapa? Recorre TODOS los tiles que
+   *  toca (sin puntos ciegos). Los ÁRBOLES solo bloquean por el TRONCO
+   *  (área baja y central del tile): puedes rodearlos, y si tus pies quedan
+   *  por encima del tronco pasas POR DETRÁS (te tapa la copa); si quedan
+   *  por debajo, pasas POR DELANTE (te ves encima del árbol). */
   rectSolido(x, y, w, h) {
     const tx0 = Math.floor(x / TILE_SIZE), tx1 = Math.floor((x + w) / TILE_SIZE);
     const ty0 = Math.floor(y / TILE_SIZE), ty1 = Math.floor((y + h) / TILE_SIZE);
     for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
       if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
-      if (this.solid[ty * MAP_W + tx] !== 0) return true;
+      const i = ty * MAP_W + tx;
+      const s = this.solid[i];
+      if (s === 0) continue;
+      if (s === 3) { // árbol: solo el tronco es macizo
+        const t = this.tronco[i];
+        if (t && x < t.x + t.w && x + w > t.x && y < t.y + t.h && y + h > t.y) return true;
+        continue;
+      }
+      return true; // pared, agua o roca: el tile entero bloquea
     }
     return false;
   }
@@ -171,7 +191,8 @@ export class Mapa {
       ctx.strokeStyle = 'rgba(0,0,0,0.07)';
       ctx.strokeRect(px + .5, py + .5, T, T);
 
-      // Decoración baja (flores) — árboles y rocas van en la capa alta
+      // Decoración baja: flores y ROCAS se dibujan aquí (siempre por DEBAJO
+      // del jugador y los enemigos) — los árboles van en la capa alta
       const d = this.deco[i];
       const g = this.game;
       if (d === 'flor') {
@@ -182,6 +203,19 @@ export class Mapa {
         } else {
           ctx.font = '13px serif'; ctx.textAlign = 'center';
           ctx.fillText(((x + y) % 2) ? '🌸' : '🌼', px + 16, py + 21);
+        }
+      } else if (d === 'roca') {
+        const img = g.assets['tile_roca'];
+        if (img) {
+          // sombra de anclaje + roca (colisiona, pero nunca tapa al jugador)
+          ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
+          ctx.beginPath(); ctx.ellipse(px + 16, py + 23, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+          ctx.drawImage(img, px + 16 - 14, py + 25 - 24, 28, 24);
+        } else {
+          ctx.fillStyle = '#7d8590';
+          ctx.beginPath(); ctx.arc(px + 16, py + 20, 9, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#565e68';
+          ctx.beginPath(); ctx.arc(px + 13, py + 17, 4, 0, Math.PI * 2); ctx.fill();
         }
       }
     }
@@ -220,39 +254,24 @@ export class Mapa {
     }
   }
 
-  /** Dibuja un elemento ALTO (árbol/roca). El Game lo llama en orden de
+  /** Dibuja un elemento ALTO (árbol). El Game lo llama en orden de
    *  profundidad mezclado con jugador/enemigos: si el jugador está por
-   *  detrás (pies más arriba), el árbol se pinta ENCIMA y lo tapa. */
+   *  detrás (pies más arriba del tronco), el árbol se pinta ENCIMA. */
   dibujarAlto(ctx, it) {
     const g = this.game;
-    if (it.tipo === 'arbol') {
-      const img = g.assets['tile_arbol'];
-      if (img) {
-        ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
-        ctx.beginPath(); ctx.ellipse(it.x, it.baseY - 2, 10, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-        const wA = 46, hA = 65; // sprite 181x256 remasterizado
-        ctx.drawImage(img, it.x - wA / 2, it.baseY - hA, wA, hA);
-      } else { // respaldo procedural
-        const px = it.x - 16, py = it.baseY - 32;
-        ctx.fillStyle = '#5d4037'; ctx.fillRect(px + 13, py + 18, 6, 12);
-        ctx.fillStyle = '#14532d';
-        ctx.beginPath(); ctx.moveTo(px + 16, py - 4); ctx.lineTo(px + 4, py + 14); ctx.lineTo(px + 28, py + 14); ctx.fill();
-        ctx.fillStyle = '#166534';
-        ctx.beginPath(); ctx.moveTo(px + 16, py - 10); ctx.lineTo(px + 2, py + 8); ctx.lineTo(px + 30, py + 8); ctx.fill();
-      }
-    } else if (it.tipo === 'roca') {
-      const img = g.assets['tile_roca'];
-      if (img) {
-        ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
-        ctx.beginPath(); ctx.ellipse(it.x, it.baseY - 2, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-        ctx.drawImage(img, it.x - 14, it.baseY - 24, 28, 24);
-      } else { // respaldo procedural
-        const px = it.x - 16, py = it.baseY - 32;
-        ctx.fillStyle = '#7d8590';
-        ctx.beginPath(); ctx.arc(px + 16, py + 20, 9, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#565e68';
-        ctx.beginPath(); ctx.arc(px + 13, py + 17, 4, 0, Math.PI * 2); ctx.fill();
-      }
+    const img = g.assets['tile_arbol'];
+    if (img) {
+      ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
+      ctx.beginPath(); ctx.ellipse(it.x, it.baseY - 2, 10, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      const wA = 46, hA = 65; // sprite 181x256 remasterizado
+      ctx.drawImage(img, it.x - wA / 2, it.baseY - hA, wA, hA);
+    } else { // respaldo procedural
+      const px = it.x - 16, py = it.baseY - 32;
+      ctx.fillStyle = '#5d4037'; ctx.fillRect(px + 13, py + 18, 6, 12);
+      ctx.fillStyle = '#14532d';
+      ctx.beginPath(); ctx.moveTo(px + 16, py - 4); ctx.lineTo(px + 4, py + 14); ctx.lineTo(px + 28, py + 14); ctx.fill();
+      ctx.fillStyle = '#166534';
+      ctx.beginPath(); ctx.moveTo(px + 16, py - 10); ctx.lineTo(px + 2, py + 8); ctx.lineTo(px + 30, py + 8); ctx.fill();
     }
   }
 

@@ -146,7 +146,7 @@ export class UI {
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
-      <div class="title-ver">v2.1 · 🎥 zoom: rueda/+/− · I inventario · M mapa · N sonido</div>`;
+      <div class="title-ver">v2.1.1 · 🎥 zoom: rueda/+/− · I inventario · M mapa · N sonido</div>`;
     o.querySelector('#bt-continuar').addEventListener('click', async () => {
       this.game.audio.playSFX('menuOk');
       await this._entrarBosque();

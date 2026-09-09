@@ -43,6 +43,18 @@ export class InputManager {
     this.game.canvas.addEventListener('pointerdown', e => {
       if (e.pointerType === 'mouse' && this.game.state === 'PLAYING') this.justPressed['KeyZ'] = true;
     });
+
+    // Anti "personaje caminando solo": si la ventana pierde el foco (cambiar
+    // de pestaña, alt-tab, clic fuera), el navegador no avisa del keyup y la
+    // tecla quedaba pulsada para siempre. Soltamos TODO al perder el foco.
+    const soltarTodo = () => {
+      this.keys = {};
+      this.justPressed = {};
+      this._pinch = null;
+      if (this.joy.active) { this.joy.active = false; this.joy.dx = this.joy.dy = 0; }
+    };
+    window.addEventListener('blur', soltarTodo);
+    document.addEventListener('visibilitychange', () => { if (document.hidden) soltarTodo(); });
   }
 
   /** ¿Hay cursor utilizable? (PC sin modo táctil) */

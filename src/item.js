@@ -23,6 +23,7 @@ export class GroundItem {
     this.width = 24; this.height = 24;
     this.recogido = false;
     this.t = Math.random() * 6;
+    this._pie = 22; // ancla de profundidad: apoyado en el suelo
   }
 
   update(dt) { this.t += dt; }

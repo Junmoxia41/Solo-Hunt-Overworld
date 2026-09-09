@@ -47,6 +47,11 @@ export class DungeonMap {
       }
     }
     this.tall.sort((a, b) => a.baseY - b.baseY);
+    // Envoltorios estables (sin basura por frame)
+    this._tallWrap = this.tall.map(it => ({
+      y: it.baseY,
+      o: { x: it.x - 16, y: it.baseY - 40, width: 32, height: 44, render: c => this.dibujarAlto(c, it) }
+    }));
   }
 
   _pon(tx, ty, suelo, solid, deco = null) {

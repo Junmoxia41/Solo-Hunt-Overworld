@@ -238,24 +238,18 @@ export class Game {
 
     this.currentMap.render(ctx, this.camera);
 
-    // Orden de render por profundidad (y) para efecto top-down.
-    // La capa ALTA del mapa (árboles, rocas, pilares) se mezcla con las
-    // entidades: si el jugador está detrás (pies más arriba), lo tapan.
-    const mapa = this.currentMap;
-    const capaAlta = (mapa.tall || []).map(it => ({
-      y: it.baseY,
-      o: {
-        x: it.x - 32, y: it.baseY - 96, width: 64, height: 120,
-        render: c => mapa.dibujarAlto(c, it)
-      }
-    }));
+    // Orden de render por profundidad: se compara la SUELA (pies) de cada
+    // entidad contra la base del tronco de los árboles/pilares. Así, si
+    // caminas por DEBAJO (delante) del árbol te ves ENCIMA; si pasas por
+    // detrás (arriba), la copa te tapa. Los envoltorios de la capa alta
+    // ya vienen precomputados del mapa (cero basura por frame).
     const dibujables = [
-      ...capaAlta,
-      ...this.groundItems.map(g => ({ y: g.y, o: g })),
-      ...this.npcs.map(n => ({ y: n.y, o: n })),
-      ...this.shadows.map(s => ({ y: s.y, o: s })),
-      ...this.enemies.map(e => ({ y: e.y, o: e })),
-      { y: this.player.y, o: this.player }
+      ...(this.currentMap._tallWrap || []),
+      ...this.groundItems.map(g => ({ y: g.y + (g._pie || 0), o: g })),
+      ...this.npcs.map(n => ({ y: n.y + (n._pie || 0), o: n })),
+      ...this.shadows.map(s => ({ y: s.y + (s._pie || 0), o: s })),
+      ...this.enemies.map(e => ({ y: e.y + (e._pie || 0), o: e })),
+      { y: this.player.y + this.player._pie, o: this.player }
     ].sort((a, b) => a.y - b.y);
     for (const d of dibujables) if (this.camera.isVisible(d.o)) d.o.render(ctx);
 

@@ -14,6 +14,7 @@ export class NPC {
     this.width = 32; this.height = 32;
     this.interactRange = 58;
     this.t = Math.random() * 6;
+    this._pie = 30; // ancla de profundidad: la suela del sprite
   }
 
   update(dt) { this.t += dt; }

@@ -26,6 +26,7 @@ export class Shadow {
     this.target = null;
     this.t = Math.random() * 9;
     this._humoT = 0;
+    this._pie = 37; // ancla de profundidad: la suela del sprite
   }
 
   get atk() { return this.player.atk * SHADOW_DAMAGE_RATIO; }
