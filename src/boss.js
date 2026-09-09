@@ -75,13 +75,22 @@ export class Boss extends Enemy {
 
     if (player.isDead) return;
 
-    // --- Movimiento y ataque cuerpo a cuerpo ---
-    if (d > this.attackRange) this._irHacia(player, velMult, dt);
+    // --- Movimiento y ataque cuerpo a cuerpo (con windup esquivable) ---
+    if (d > this.attackRange) { this._irHacia(player, velMult, dt); this._windupM = 0; }
     else if (this.attackTimer <= 0) {
-      player.takeDamage(this.atk, this);
-      this.attackTimer = this.attackCooldownBase;
-      this.game.addParticles(player.x + 16, player.y + 16, 'hit_slash', 10);
-      this.game.combat.triggerScreenShake(4, 0.15);
+      if (!this._windupM) this._windupM = 0.45; // v2.3: carga telegrafiada
+      else {
+        this._windupM -= dt;
+        if (this._windupM <= 0) {
+          this._windupM = 0;
+          if (d < this.attackRange * 1.3) { // te dio tiempo a esquivar
+            player.takeDamage(this.atk, this);
+            this.game.addParticles(player.x + 16, player.y + 16, 'hit_slash', 10);
+            this.game.combat.triggerScreenShake(4, 0.15);
+          }
+          this.attackTimer = this.attackCooldownBase;
+        }
+      }
     }
 
     // --- Patrón fase 2: invocar esbirros (máx 6 vivos) ---
@@ -105,8 +114,15 @@ export class Boss extends Enemy {
     // --- Patrón fase 3: anillos de proyectiles + blink ---
     if (this.phase >= 3) {
       if (this._anilloT <= 0) {
-        this._anilloT = 3.4;
-        this._anillo(projectileCountFromPhase(this.phase), player);
+        if (!this._cargaAnillo) this._cargaAnillo = 0.5; // v2.3: media carga visible
+        else {
+          this._cargaAnillo -= dt;
+          if (this._cargaAnillo <= 0) {
+            this._cargaAnillo = 0;
+            this._anilloT = 3.4;
+            this._anillo(projectileCountFromPhase(this.phase), player);
+          }
+        }
       }
       if (d > 220 && Math.random() < 0.005) {
         // Parpadeo hacia el jugador si se aleja
@@ -188,6 +204,24 @@ export class Boss extends Enemy {
     }
     ctx.restore();
 
+    // v2.3: telegraphs del jefe
+    if (this._windupM > 0) {
+      const pr = 1 - this._windupM / 0.45;
+      ctx.save();
+      ctx.globalAlpha = 0.6 + Math.sin(this.animT * 28) * 0.3;
+      ctx.strokeStyle = '#fff'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(this.x + 16, this.y + 16, 44 - 20 * pr, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
+    if (this._cargaAnillo > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35 + Math.sin(this.animT * 34) * 0.25;
+      const gr2 = ctx.createRadialGradient(this.x + 16, this.y + 16, 20, this.x + 16, this.y + 16, 90);
+      gr2.addColorStop(0, this.cssBoss); gr2.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gr2;
+      ctx.beginPath(); ctx.arc(this.x + 16, this.y + 16, 90, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
     // Corona de poder
     ctx.font = '20px serif';
     ctx.textAlign = 'center';

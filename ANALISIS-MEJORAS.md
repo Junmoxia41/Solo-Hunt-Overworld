@@ -122,14 +122,14 @@
 6. ✅ Tooltip comparativo al equipar (+7 en verde / −x en rojo vs lo equipado) + botón ORDENAR MOCHILA.
 7. ✅ Pausa automática al perder foco (blur / cambiar de pestaña).
 
-### 🟡 P2 — PROFUNDIDAD (2–3 sesiones)
-1. Windup/telegraph de ataques enemigos + élites con afijos.
-2. Mejora de equipo en tienda (refinar con oro + materiales) → usa los materiales (B4).
-3. Cadena de 10 misiones + herrera Vex + flecha guía de misión.
-4. Frames de caminar del jugador (spritesheet) + poseo de ataque.
-5. Sombras con habilidad según su tipo + ARISE con dificultad variable.
-6. Ajustes de balance (regen, curva EXP, saltos de equipo) + respeto por oro.
-7. Niebla de guerra en mapa/minimapa + fast travel.
+### 🟡 P2 — PROFUNDIDAD — ✅ COMPLETADO EN v2.3.0 (salvo lo indicado)
+1. ✅ Windup/telegraph de ataques enemigos (anillo que se cierra) + élites con 4 afijos.
+2. ✅ Refinar equipo en tienda (oro + materiales) → los materiales ya tienen uso (B4). El refinado se hace con el Mercader Krow (la herrera Vex quedó como idea futura).
+3. ✅ Cadena de 10 misiones (kill/collect/dungeon) + rastreador HUD + flecha guía.
+4. ⏭️ Frames de caminar del jugador — pendiente (requiere generar spritesheets: límite de imágenes por sesión).
+5. ✅ Sombras con habilidad según su tipo (duende/mago disparan) + ARISE con dificultad variable y PERFECTO (+25% vida).
+6. ✅ Balance: regen ×0.25 en combate + respec de stats por oro. (Curva EXP: el fix del jefe ya la corrige a la baja; ajuste fino pendiente de juego real.)
+7. ⏭️ Niebla de guerra + fast travel — movidos a P3.
 
 ### 🟢 P3 — GRANDES (varias sesiones)
 1. Segundo bioma: Cementerio Niebloso (tiles, enemigos élite, jefe, misión de apertura).

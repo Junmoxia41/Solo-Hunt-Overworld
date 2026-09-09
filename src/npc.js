@@ -24,17 +24,21 @@ export class NPC {
     const q = g.quests; // QuestManager
     let opcoes = null;
 
-    // Lógica de misión del Guía del Gremio
+    // Lógica de misión del Guía del Gremio (cadena v2.3)
     if (this.id === 'guia_gremio') {
-      if (q && !q.aceptada && !q.completada) {
-        opcoes = [{ texto: '⚔️ Aceptar misión: caza 5 lobos', accion: () => q.aceptar() }];
-      } else if (q && q.aceptada && !q.lista) {
+      if (!q || q.completada) {
+        this.lineasVivas = q?.completada
+          ? ['Has completado todos los encargos del Gremio, cazador. Los portales son tuyos… y las leyendas también.']
+          : this.lineas;
+      } else if (!q.aceptada) {
+        this.lineasVivas = [q.def.descripcion];
+        opcoes = [{ texto: `📜 Aceptar: ${q.etiqueta()}`, accion: () => q.aceptar() }];
+      } else if (!q.lista) {
         const llevas = Math.min(q.progreso(), q.objetivo);
-        this.lineasVivas = [`Los lobos no se cazan solos… llevas ${llevas}/${q.objetivo}.`];
-      } else if (q && q.lista && !q.completada) {
-        opcoes = [{ texto: '🎁 Entregar misión (+100 EXP, +50 oro)', accion: () => q.entregar() }];
-      } else if (q && q.completada) {
-        this.lineasVivas = ['Has demostrado tu valía. Los portales Rango E te esperan, cazador.'];
+        this.lineasVivas = [`${q.def.nombre}: ${llevas}/${q.objetivo}. ${q.def.descripcion}`];
+      } else {
+        const r = q.def.recompensa || {};
+        opcoes = [{ texto: `🎁 Entregar: ${q.def.nombre} (+${r.exp || 0} EXP, +${r.oro || 0} oro${r.item ? ', objeto' : ''})`, accion: () => q.entregar() }];
       }
     }
 
@@ -63,7 +67,7 @@ export class NPC {
     // indicador de interacción (misión solo en el Guía)
     const q = this.game.quests;
     const marca = q && this.id === 'guia_gremio'
-      ? (!q.aceptada || q.lista) && !q.completada ? '!' : (q.completada ? '✓' : '…')
+      ? q.completada ? '✓' : ((!q.aceptada || q.lista) ? '!' : '…')
       : (this.id === 'mercader' ? '💰' : '!');
     ctx.fillStyle = marca === '!' ? '#ffd700' : '#2ecc71';
     ctx.font = '11px "Press Start 2P", monospace';

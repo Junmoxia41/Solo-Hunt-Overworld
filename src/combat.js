@@ -52,12 +52,12 @@ export class Combat {
       if (pr.owner === 'enemy' && rectCollision(pr, p)) {
         p.takeDamage(pr.damage, pr);
         pr.destroy();
-      } else if (pr.owner === 'player') {
+      } else if (pr.owner === 'player' || pr.owner === 'shadow') {
         for (const e of g.enemies) {
           if (!e.isDead && rectCollision(pr, e)) {
             const kb = angleVec(p, e);
             e.takeDamage(pr.damage, kb.x * 0.5, kb.y * 0.5, false);
-            this.spawnDamageNumber(e.x + 16, e.y, pr.damage, { color: '#d7b6ff', size: 13 });
+            this.spawnDamageNumber(e.x + 16, e.y, pr.damage, { color: pr.owner === 'shadow' ? '#00e5ff' : '#d7b6ff', size: 13 });
             pr.destroy();
             break;
           }
@@ -67,7 +67,7 @@ export class Combat {
 
     // — Sombras del jugador atacan —
     for (const s of g.shadows) {
-      if (!s.isAlive || s.attackTimer > 0) continue;
+      if (!s.isAlive || s.attackTimer > 0 || s.esDistancia) continue;
       const objetivo = s.target && !s.target.isDead ? s.target : null;
       if (objetivo && distEnt(s, objetivo) < 46) {
         const dmg = Math.max(1, Math.round(p.atk * SHADOW_DAMAGE_RATIO * (0.9 + Math.random() * 0.2)));

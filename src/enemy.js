@@ -35,6 +35,8 @@ export class Enemy {
     this.attackRange = d.attackRange ?? 40;
     this.attackCooldownBase = d.attackCooldown ?? 1.5;
     this.attackTimer = 0;
+    this.windupT = d.windup ?? 0.4; // v2.3: aviso de carga antes de golpear
+    this._windup = 0;
     this.inmuebleStun = !!d.inmuneStun;
     this.escapa = !!d.escapa;
     this.distanciaSegura = d.distanciaSegura ?? 0;
@@ -79,7 +81,24 @@ export class Enemy {
   /* ---------- Bucle ---------- */
   update(dt, player) {
     this.animT += dt;
-    if (this.isDead) { this.deathTimer += dt; return; }
+    if (this.isDead) {
+      this.deathTimer += dt;
+      // v2.3: élite explosivo — mecha tras morir y ¡BOOM! si estás cerca
+      if (this.fusel != null) {
+        this.fusel -= dt;
+        if (this.fusel <= 0) {
+          this.fusel = null;
+          const g = this.game;
+          g.addParticles(this.x + 16, this.y + 16, 'arise', 30);
+          g.combat.triggerScreenShake(9, 0.4);
+          g.audio.playSFX('heavy');
+          if (Math.hypot(g.player.x - this.x, g.player.y - this.y) < 64) {
+            g.player.takeDamage(Math.round(this.atk * 1.5), this);
+          }
+        }
+      }
+      return;
+    }
     this.attackTimer = Math.max(0, this.attackTimer - dt);
 
     // Knockback residual
@@ -119,12 +138,19 @@ export class Enemy {
         break;
 
       case 'ATTACK':
-        if (player.isDead) { this.state = 'IDLE'; break; }
-        if (d > this.attackRange * 1.4) { this.state = 'CHASE'; break; }
+        if (player.isDead) { this.state = 'IDLE'; this._windup = 0; break; }
+        if (d > this.attackRange * 1.4) { this.state = 'CHASE'; this._windup = 0; break; }
         this._mirarHacia(player);
+        // v2.3: WINDUP — el golpe se telegrafía antes de caer (esquivable)
         if (this.attackTimer <= 0) {
-          this._atacar(player, d);
-          this.attackTimer = this.attackCooldownBase;
+          if (this._windup <= 0) this._windup = this.windupT;
+          else {
+            this._windup -= dt;
+            if (this._windup <= 0) {
+              this._atacar(player, d);
+              this.attackTimer = this.attackCooldownBase;
+            }
+          }
         }
         break;
     }
@@ -135,6 +161,20 @@ export class Enemy {
 
   _mirarHacia(player) { this._dirV = angleVec(this, player); }
 
+  /** v2.3: convierte a este enemigo en ÉLITE con un afijo (más duro, más botín) */
+  hacerElite(afijo = null) {
+    this.esElite = true;
+    this.afijo = afijo || ['veloz', 'escudado', 'vampirico', 'explosivo'][randomInt(0, 3)];
+    this.maxHp = Math.round(this.maxHp * 2.2); this.hp = this.maxHp;
+    this.atk = Math.round(this.atk * 1.3);
+    this.expReward = Math.round(this.expReward * 2.5);
+    this.goldReward = Math.round(this.goldReward * 2.5);
+    if (this.afijo === 'veloz') this.speed = Math.round(this.speed * 1.4);
+    if (this.afijo === 'escudado') this.def = Math.round(this.def * 2.5 + 2);
+    this.nombre = 'Élite ' + this.nombre;
+    this.escalaRender = 1.25;
+  }
+
   /** Comportamiento de persecución base (las subclases lo sobreescriben) */
   _persecucion(dt, player) { this._irHacia(player, 1, dt); }
 
@@ -142,6 +182,10 @@ export class Enemy {
   _atacar(player, d) {
     if (d < this.attackRange * 1.15) {
       player.takeDamage(this.atk, this);
+      if (this.afijo === 'vampirico') { // v2.3: élite vampírico roba vida
+        this.hp = Math.min(this.maxHp, this.hp + Math.round(this.atk * 0.5));
+        this.game.addParticles(this.x + 16, this.y + 16, 'heal', 5);
+      }
       this.game.audio.playSFX('slash2');
     }
   }
@@ -153,7 +197,7 @@ export class Enemy {
     this.hp -= dmg;
     this.knockbackVx = kbx * 220;
     this.knockbackVy = kby * 220;
-    if (isCrit && !this.inmuebleStun) { this.state = 'STUNNED'; this.stateTimer = 0.45; }
+    if (isCrit && !this.inmuebleStun) { this.state = 'STUNNED'; this.stateTimer = 0.45; this._windup = 0; }
     if (this.hp <= 0) this.die();
     else if (this.state === 'IDLE') this.state = 'CHASE'; // atacar despierta
   }
@@ -162,6 +206,7 @@ export class Enemy {
     const g = this.game;
     this.isDead = true;
     this.deathTimer = 0;
+    if (this.esElite && this.afijo === 'explosivo') this.fusel = 0.75; // mecha
     g.player.gainExp(this.expReward);
     g.player.gold += this.goldReward;
     g.player.totalKills++;
@@ -234,6 +279,28 @@ export class Enemy {
       return;
     }
 
+    // v2.3: aura de élite
+    if (this.esElite) {
+      const AF = { veloz: '#00e5ff', escudado: '#b0bec5', vampirico: '#e74c3c', explosivo: '#ff9800' };
+      const c = AF[this.afijo] || '#ffd700';
+      ctx.save();
+      ctx.globalAlpha = 0.3 + Math.sin(this.animT * 5) * 0.12;
+      const gr = ctx.createRadialGradient(this.x + 16, this.y + 16, 8, this.x + 16, this.y + 16, 34);
+      gr.addColorStop(0, c); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = gr;
+      ctx.beginPath(); ctx.arc(this.x + 16, this.y + 16, 34, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    // v2.3: telegraph del golpe (anillo que se cierra)
+    if (this._windup > 0) {
+      const pr = 1 - this._windup / this.windupT;
+      ctx.save();
+      ctx.globalAlpha = 0.55 + Math.sin(this.animT * 30) * 0.35;
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(this.x + 16, this.y + 16, 26 - 12 * pr, 0, Math.PI * 2); ctx.stroke();
+      ctx.restore();
+    }
     // Flash de aturdimiento
     if (this.state === 'STUNNED') {
       ctx.save();
@@ -242,12 +309,17 @@ export class Enemy {
     this._dibujarCuerpo(ctx, img, bob);
     if (this.state === 'STUNNED') ctx.restore();
 
-    // ¡Alerta! al detectar al jugador
-    if (this.state === 'CHASE') {
+    // ¡Alerta! al detectar al jugador / estrella de élite
+    if (this.state === 'CHASE' && !this.esElite) {
       ctx.fillStyle = '#e74c3c';
       ctx.font = '12px "Press Start 2P", monospace';
       ctx.textAlign = 'center';
       ctx.fillText('!', this.x + 16, this.y - 14 + bob);
+    }
+    if (this.esElite) {
+      ctx.font = '10px "Press Start 2P", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('★', this.x + 16, this.y - 12 + bob);
     }
 
     // Barra de vida si está dañado
@@ -264,7 +336,7 @@ export class Enemy {
     const p = this.game.player;
     const fs = p && (p.x + 16) < (this.x + 16) ? -1 : 1;
     if (img) {
-      const S = 56;
+      const S = 56 * (this.escalaRender || 1); // élites más grandes
       ctx.save();
       ctx.translate(this.x + 16, this.y + 10 + bob); // centro del sprite
       ctx.scale(fs, 1);

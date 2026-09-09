@@ -95,19 +95,29 @@ export class Inventory {
   }
 
   serialize() {
+    // v2.3: incluye el nivel de refinado (+N) de cada objeto
     return {
-      slots: this.slots.map(s => s ? { id: s.item.id, cantidad: s.cantidad } : null),
-      equipped: Object.fromEntries(Object.entries(this.equipped).map(([k, v]) => [k, v ? v.id : null]))
+      slots: this.slots.map(s => s ? { id: s.item.id, cantidad: s.cantidad, refino: s.item.refino || 0 } : null),
+      equipped: Object.fromEntries(Object.entries(this.equipped).map(
+        ([k, v]) => [k, v ? { id: v.id, refino: v.refino || 0 } : null]
+      ))
     };
   }
 
   deserialize(d) {
     if (!d) return;
     const buscar = id => this.game.data.items.find(i => i.id === id) || null;
-    this.slots = (d.slots || []).map(s => s ? { item: buscar(s.id), cantidad: s.cantidad } : null)
+    const materializar = ref => {
+      // compatible con partidas viejas (string) y nuevas ({id, refino})
+      const id = typeof ref === 'string' ? ref : ref?.id;
+      const it = buscar(id);
+      if (it && typeof ref === 'object' && ref.refino) it.refino = ref.refino;
+      return it;
+    };
+    this.slots = (d.slots || []).map(s => s ? { item: materializar(s), cantidad: s.cantidad } : null)
                                 .map(s => s && s.item ? s : null);
     for (const k of Object.keys(this.equipped)) {
-      this.equipped[k] = d.equipped?.[k] ? buscar(d.equipped[k]) : null;
+      this.equipped[k] = d.equipped?.[k] ? materializar(d.equipped[k]) : null;
     }
     this.game.player.recalculateStats();
   }

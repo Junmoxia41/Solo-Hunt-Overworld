@@ -60,12 +60,18 @@ export class Player {
   /* ---------- Stats derivados ---------- */
   recalculateStats() {
     const inv = this.game.inventory;
-    const bAtk = inv?.equipped?.weapon?.stats?.atk || 0;
-    const bCrit = inv?.equipped?.weapon?.stats?.crit || 0;
-    const bDef = (inv?.equipped?.armor?.stats?.def || 0);
-    const bHp = (inv?.equipped?.armor?.stats?.hp || 0);
+    // v2.3: el refinado (+N) multiplica el aporte del objeto: +10% por nivel
+    const mult = it => 1 + 0.1 * (it?.refino || 0);
+    const arma = inv?.equipped?.weapon;
+    const bAtk = Math.round((arma?.stats?.atk || 0) * mult(arma));
+    const bCrit = (arma?.stats?.crit || 0) * mult(arma);
+    const coraza = inv?.equipped?.armor;
+    const bDef = Math.round((coraza?.stats?.def || 0) * mult(coraza));
+    const bHp = Math.round((coraza?.stats?.hp || 0) * mult(coraza));
     // v2.2: el accesorio también aporta stats (atk/def/hp/crit/spd)
-    const acc = inv?.equipped?.accessory?.stats || {};
+    const accIt = inv?.equipped?.accessory;
+    const acc = {};
+    for (const [k, v] of Object.entries(accIt?.stats || {})) acc[k] = v * mult(accIt);
     const s = this.stats;
     this.atk = s.str * 2 + bAtk + (acc.atk || 0);
     this.def = Math.round(s.vit * 1.25 + bDef + (acc.def || 0));
@@ -88,9 +94,10 @@ export class Player {
     if (this.isDead) return;
     const g = this.game;
 
-    // Regeneración
-    this.hp = Math.min(this.maxHp, this.hp + this.hpRegen * dt);
-    this.mp = Math.min(this.maxMp, this.mp + this.mpRegen * dt);
+    // Regeneración (v2.3: muy reducida si hay enemigos cerca — las pociones importan)
+    const enCombate = g.enemies.some(e => !e.isDead && Math.hypot(e.x - this.x, e.y - this.y) < 280);
+    this.hp = Math.min(this.maxHp, this.hp + this.hpRegen * (enCombate ? 0.25 : 1) * dt);
+    this.mp = Math.min(this.maxMp, this.mp + this.mpRegen * (enCombate ? 0.5 : 1) * dt);
 
     // Timers
     this.attackCooldown = Math.max(0, this.attackCooldown - dt);

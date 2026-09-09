@@ -21,6 +21,8 @@ export class Shadow {
     this.attackTimer = 0;
     this.followDistance = 54;
     this.role = 'attack'; // 'attack' | 'defend'
+    this.esDistancia = ['duende', 'mago'].includes(this.tipo); // v2.3: dispara de lejos
+    this._disparoT = 0;
     this.isAlive = true;
     this.respawnTimer = 0;
     this.target = null;
@@ -63,8 +65,24 @@ export class Shadow {
 
     if (this.target && !this.target.isDead) {
       const d = distEnt(this, this.target);
-      if (d > this.range) this._irHacia(this.target, dt);
-      // el golpe lo resuelve combat.js cuando target esté a rango
+      // v2.3: las sombras de arquero/mago disparan desde lejos
+      if (this.esDistancia) {
+        this._disparoT = Math.max(0, this._disparoT - dt);
+        if (d < 175 && this._disparoT === 0) {
+          this._disparoT = 1.8;
+          const v = angleVec(this, this.target);
+          this.game.addProjectile({
+            x: this.x + 12, y: this.y + 10,
+            vx: v.x * 240, vy: v.y * 240,
+            damage: Math.max(1, Math.round(this.atk * 1.2)), owner: 'shadow',
+            tipo: this.tipo === 'mago' ? 'bola' : 'flecha',
+            color: '#00e5ff', size: 8, life: 1.6, trail: true
+          });
+        }
+        if (d < 110) { /* mantiene la distancia */ }
+        else this._irHacia(this.target, dt);
+      } else if (d > this.range) this._irHacia(this.target, dt);
+      // el golpe melé lo resuelve combat.js cuando target esté a rango
     } else {
       // Formación detrás del jugador
       const idx = this.game.shadows.indexOf(this);

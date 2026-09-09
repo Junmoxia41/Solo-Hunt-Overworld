@@ -270,7 +270,7 @@ export class Dungeon {
           const x = (sala.tx + randomInt(1, sala.w - 2)) * TILE_SIZE;
           const y = (sala.ty + randomInt(1, sala.h - 2)) * TILE_SIZE;
           if (!g.currentMap.isSolid(x + 16, y + 16)) {
-            g.spawnEnemy(tipo, x, y, this.cfg.zona + (this.piso - 1));
+            g.spawnEnemy(tipo, x, y, this.cfg.zona + (this.piso - 1), Math.random() < 0.15); // 15% élites
             break;
           }
         }
@@ -410,6 +410,9 @@ export class Dungeon {
 
   async complete() {
     const g = this.game;
+    // v2.3: registrar para misiones y estadísticas
+    g.mazmorrasCompletadas[this.rango] = (g.mazmorrasCompletadas[this.rango] || 0) + 1;
+    g.quests?.notificar('dungeon', this.rango);
     const bonusExp = this.stats.exp; // EXP x2: doblamos lo ganado dentro
     const bonusOro = this.cfg.premioOroBase;              // recompensa fija del rango
     const bonusTiempo = Math.round(this.tiempoRestante * 2); // +2 de oro por segundo sobrante

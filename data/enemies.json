@@ -31,7 +31,8 @@
         "chance": 0.04,
         "cantidad": 1
       }
-    ]
+    ],
+    "windup": 0.35
   },
   "murcielago": {
     "nombre": "Murciélago Ciego",
@@ -65,7 +66,8 @@
         "chance": 0.06,
         "cantidad": 1
       }
-    ]
+    ],
+    "windup": 0.25
   },
   "nomuerto": {
     "nombre": "No-Muerto",
@@ -100,7 +102,8 @@
         "chance": 0.05,
         "cantidad": 1
       }
-    ]
+    ],
+    "windup": 0.6
   },
   "duende": {
     "nombre": "Duende Arquero",
@@ -136,7 +139,8 @@
         "chance": 0.05,
         "cantidad": 1
       }
-    ]
+    ],
+    "windup": 0.45
   },
   "mago": {
     "nombre": "Mago Oscuro",
@@ -175,6 +179,7 @@
         "chance": 0.04,
         "cantidad": 1
       }
-    ]
+    ],
+    "windup": 0.55
   }
 }

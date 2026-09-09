@@ -14,7 +14,12 @@ export class SaveManager {
       player: game.player.serialize(),
       shadows: game.shadows.map(s => ({ tipo: s.tipo, nombre: s.nombre, role: s.role })),
       questsDone: game.questsDone || [],
-      questProgreso: game.questProgreso || {},
+      questProgreso: {
+        actual: game.quests?.def?.id || null,
+        aceptada: !!game.quests?.aceptada,
+        base: game.quests?._base || 0
+      },
+      mazmorrasCompletadas: game.mazmorrasCompletadas || {},
       playTime: game.playTime,
       totalDeaths: game.totalDeaths,
       settings: {
@@ -43,6 +48,7 @@ export class SaveManager {
     game.totalDeaths = data.totalDeaths || 0;
     game.questsDone = data.questsDone || [];
     game.questProgreso = data.questProgreso || {};
+    game.mazmorrasCompletadas = data.mazmorrasCompletadas || {};
     if (data.settings) {
       game.audio.bgmVolume = data.settings.bgm;
       game.audio.sfxVolume = data.settings.sfx;

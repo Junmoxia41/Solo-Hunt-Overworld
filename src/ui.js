@@ -162,7 +162,7 @@ export class UI {
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
-      <div class="title-ver">v2.2.0 · H poción · I inventario · M mapa · N sonido · zoom: rueda/+/−</div>`;
+      <div class="title-ver">v2.3.0 · misiones · élites · refinar equipo · H poción · M mapa</div>`;
     o.querySelector('#bt-continuar').addEventListener('click', async () => {
       this.game.audio.playSFX('menuOk');
       await this._entrarBosque();
@@ -222,6 +222,8 @@ export class UI {
         <div id="shop-buy"></div>
         <h3>Vender (toca tus objetos)</h3>
         <div id="shop-sell"></div>
+        <h3>⚒️ Refinar equipo <span style="font-size:8px;color:#888">(oro + materiales · +10% stats por nivel, máx +5)</span></h3>
+        <div id="shop-refine"></div>
         <button class="rpg-btn small" id="bt-end" style="display:block;margin:14px auto 0">CERRAR TIENDA (ESC)</button>
       </div>`;
 
@@ -268,6 +270,49 @@ export class UI {
       };
       vend.appendChild(fila);
     }
+    // — ⚒️ Refinar equipo (v2.3): oro + materiales → +10% stats por nivel —
+    const ref = o.querySelector('#shop-refine');
+    const MAT = { weapon: 'wolf_fang', armor: 'bone', accessory: 'bat_wing' };
+    let hayEquipo = false;
+    for (const [tipo, it] of Object.entries(inv.equipped)) {
+      if (!it) continue;
+      hayEquipo = true;
+      const r = it.refino || 0;
+      const fila = document.createElement('div');
+      fila.className = 'shop-row';
+      if (r >= 5) {
+        fila.innerHTML = `<span>${ICONOS[tipo]} <b style="color:${RARITY_COLORS[it.rarity]}">${it.name} +5</b></span><span style="color:#ffd700">MÁXIMO</span>`;
+        ref.appendChild(fila);
+        continue;
+      }
+      const costeOro = 60 * (r + 1);
+      const costeMat = r + 1;
+      const tieneMat = inv.contarItem(MAT[tipo]);
+      const puede = g.player.gold >= costeOro && tieneMat >= costeMat;
+      fila.innerHTML = `
+        <span>${ICONOS[tipo]} <b style="color:${RARITY_COLORS[it.rarity]}">${it.name}${r ? ' +' + r : ''}</b>
+          <span style="color:#2ecc71">→ +${r + 1}</span></span>
+        <button class="rpg-btn small" ${puede ? '' : 'disabled'}>⚒️ ${costeOro}💰 + ${costeMat} mat.</button>`;
+      fila.querySelector('button').onclick = () => {
+        let faltan = costeMat;
+        inv.slots.forEach((s, i) => {
+          if (!s || faltan <= 0 || s.item.id !== MAT[tipo]) return;
+          const quita = Math.min(faltan, s.cantidad);
+          inv.removeItem(i, quita);
+          faltan -= quita;
+        });
+        g.player.gold -= costeOro;
+        it.refino = r + 1;
+        g.player.recalculateStats();
+        g.audio.playSFX('menuOk');
+        g.addParticles(g.player.x + 16, g.player.y + 16, 'gold_pickup', 10);
+        this.toast(`⚒️ ${it.name} +${r + 1} — equipo reforzado`, '#f1c40f');
+        this._pintarTienda();
+      };
+      ref.appendChild(fila);
+    }
+    if (!hayEquipo) ref.innerHTML = '<p style="color:#888;text-align:center">Equípate algo primero…</p>';
+
     o.querySelector('#bt-end').onclick = () => g.changeState('PLAYING');
   }
 
@@ -318,6 +363,7 @@ export class UI {
           <button class="rpg-btn small" id="bt-inv">🎒 Inventario (I)</button>
           <button class="rpg-btn small" id="bt-mute">${g.audio.isMuted ? '🔊 Quitar silencio' : '🔇 Silenciar'} (N)</button>
           <button class="rpg-btn small green" id="bt-save">💾 Guardar</button>
+          <button class="rpg-btn small" id="bt-respec">↺ Redistribuir stats (${50 * p.level} oro)</button>
           <button class="rpg-btn small" id="bt-menu">🚪 Salir al menú</button>
         </div>
       </div>`;
@@ -327,6 +373,23 @@ export class UI {
     o.querySelector('#bt-save').onclick = () => {
       if (g.dungeon) return this.toast('🚫 No puedes guardar dentro de una mazmorra', '#e74c3c');
       SaveManager.save(g); g.audio.playSFX('menuOk'); this.toast('💾 Guardado');
+    };
+    // v2.3: redistribuir puntos de stat por oro
+    o.querySelector('#bt-respec').onclick = () => {
+      const coste = 50 * p.level;
+      const BASE = { str: 5, agi: 3, vit: 4, int: 2, per: 1 };
+      // calcular y VALIDAR antes de tocar nada (bug fix: no perder puntos sin oro)
+      let devueltos = 0;
+      for (const k of Object.keys(BASE)) devueltos += Math.max(0, p.stats[k] - BASE[k]);
+      if (devueltos === 0) return this.toast('No tienes puntos que redistribuir', '#95a5a6');
+      if (p.gold < coste) return this.toast(`Necesitas ${coste} de oro`, '#e74c3c');
+      for (const k of Object.keys(BASE)) p.stats[k] = BASE[k];
+      p.statPoints += devueltos;
+      p.gold -= coste;
+      p.recalculateStats();
+      g.audio.playSFX('menuOk');
+      this.toast(`↺ ${devueltos} puntos devueltos por ${coste} de oro — ¡asigna de nuevo!`, '#9b59b6', 3600);
+      this._pausa();
     };
     o.querySelector('#bt-menu').onclick = () => { SaveManager.save(g); g.changeState('MENU'); };
   }
@@ -495,9 +558,11 @@ export class UI {
         let st;
         if (['weapon', 'armor', 'accessory'].includes(s.item.type)) {
           const eq = inv.equipped[s.item.type];
+          const mult = it => 1 + 0.1 * (it?.refino || 0); // v2.3: stats efectivos con refinado
           const keys = [...new Set([...Object.keys(s.item.stats || {}), ...Object.keys(eq?.stats || {})])];
           st = keys.map(k => {
-            const nuevo = s.item.stats?.[k] || 0, actual = eq?.stats?.[k] || 0;
+            const nuevo = Math.round((s.item.stats?.[k] || 0) * mult(s.item));
+            const actual = Math.round((eq?.stats?.[k] || 0) * mult(eq));
             const d = nuevo - actual;
             const color = d > 0 ? '#2ecc71' : d < 0 ? '#e74c3c' : '#95a5a6';
             const marca = d === 0 ? '' : ` <span style="color:${color}">(${d > 0 ? '+' : ''}${d})</span>`;
@@ -614,8 +679,9 @@ export class UI {
       </div>`;
     const zona = o.querySelector('.extract-zone');
     const cursor = o.querySelector('.extract-cursor');
-    // zona verde aleatoria (20% del ancho)
-    const zw = 20, z0 = 8 + Math.random() * (100 - zw - 16);
+    // v2.3: la zona encoge con el nivel del enemigo (jefes y élites, más difícil)
+    const zw = Math.max(12, Math.min(24, 24 - ((enemy.level || 1) - 1) * 1.4 - (enemy.esElite ? 3 : 0)));
+    const z0 = 8 + Math.random() * (100 - zw - 16);
     zona.style.left = z0 + '%'; zona.style.width = zw + '%';
     let t0 = performance.now(), pos = 0, dir = 1, raf;
     const velocidad = 1.15; // vueltas/segundo
@@ -629,15 +695,17 @@ export class UI {
     };
     raf = requestAnimationFrame(anim);
 
-    const resolver = exito => {
+    const resolver = (exito, perfecto) => {
       cancelAnimationFrame(raf);
       window.removeEventListener('keydown', tecla);
-      if (exito) this._ariseExito(enemy);
+      if (exito) this._ariseExito(enemy, perfecto);
       else this._ariseFallo(enemy);
     };
     const intentar = () => {
-      const dentro = pos * 100 >= z0 && pos * 100 <= z0 + zw;
-      resolver(dentro);
+      const pct = pos * 100;
+      const dentro = pct >= z0 && pct <= z0 + zw;
+      const perfecto = dentro && Math.abs(pct - (z0 + zw / 2)) < zw * 0.18; // centro exacto
+      resolver(dentro, perfecto);
     };
     const tecla = e => { if (['KeyE', 'Space', 'Enter'].includes(e.code)) { e.preventDefault(); intentar(); } };
     window.addEventListener('keydown', tecla);
@@ -645,7 +713,7 @@ export class UI {
     this._extractRef = { cancel: () => { cancelAnimationFrame(raf); window.removeEventListener('keydown', tecla); } };
   }
 
-  _ariseExito(enemy) {
+  _ariseExito(enemy, perfecto = false) {
     const g = this.game;
     g.audio.playSFX('arise');
     setTimeout(() => g.audio.playSFX('ariseOk'), 500);
@@ -654,8 +722,13 @@ export class UI {
     enemy.extraible = false;
     enemy.canDropShadow = false;
 
-    this._extractFlash('¡ARISE!', '#9b59b6', () => {
-      g.addShadow(enemy);
+    this._extractFlash(perfecto ? '¡ARISE PERFECTO!' : '¡ARISE!', perfecto ? '#ffd700' : '#9b59b6', () => {
+      const sh = g.addShadow(enemy);
+      if (perfecto && sh) { // v2.3: parar en el centro exacto = sombra reforzada
+        sh.maxHp = Math.round(sh.maxHp * 1.25);
+        sh.hp = sh.maxHp;
+        this.toast('✨ ¡PERFECTO! Tu nueva sombra tiene +25% de vida', '#ffd700', 3600);
+      }
       enemy.removed = true;
       this.toast(`🌑 ${enemy.nombre} se alza como tu sombra (${g.shadows.length}/${SHADOW_MAX}) · Pulsa T para rol`, '#9b59b6', 3800);
       g.changeState('PLAYING');
@@ -758,6 +831,23 @@ export class UI {
     /* --- Estado de sombras --- */
     ctx.fillStyle = '#d7b6ff';
     ctx.fillText(`🌑 ${g.shadows.length}/${SHADOW_MAX}`, pad + 8, pad + 114);
+
+    /* --- Rastreador de misión (v2.3) --- */
+    const q = g.quests;
+    if (q && q.def) {
+      const txt = q.aceptada
+        ? `${q.lista ? '✔' : '📜'} ${q.def.nombre} ${Math.min(q.progreso(), q.objetivo)}/${q.objetivo}`
+        : '📜 Nuevo encargo: busca al Guía';
+      ctx.textAlign = 'left';
+      const tw = ctx.measureText(txt).width + 16;
+      ctx.fillStyle = 'rgba(10,10,26,0.85)';
+      ctx.fillRect(pad, pad + 124, tw, 22);
+      ctx.strokeStyle = q.lista ? '#2ecc71' : (q.aceptada ? '#444' : '#ffd700');
+      ctx.lineWidth = 2;
+      ctx.strokeRect(pad, pad + 124, tw, 22);
+      ctx.fillStyle = q.lista ? '#2ecc71' : (q.aceptada ? '#c7d2fe' : '#ffd700');
+      ctx.fillText(txt, pad + 8, pad + 136);
+    }
 
     /* --- Combo --- */
     if (p.comboCount > 1 && p.comboTimer > 0) {
@@ -865,6 +955,9 @@ export class UI {
       ctx.fillText(`FASE ${boss.phase}${boss.phase === 3 ? ' — ENAJENACIÓN' : ''}`, W / 2, by + 30);
     }
 
+    /* --- Flecha guía de misión (v2.3) --- */
+    this._flechaMision(ctx, W, H);
+
     /* --- Minimapa --- */
     this._minimapa(ctx, W, pad);
 
@@ -872,6 +965,45 @@ export class UI {
     g.input.renderJoystick(ctx);
 
     ctx.restore();
+  }
+
+  /** v2.3: flecha en el borde de la pantalla hacia el objetivo de la misión */
+  _flechaMision(ctx, W, H) {
+    const g = this.game, q = g.quests, p = g.player;
+    if (!q || !q.def || g.dungeon) return;
+    let obj = null, color = '#ffd700';
+    if (!q.aceptada || q.lista) {
+      obj = g.npcs.find(n => n.id === 'guia_gremio');
+      color = q.lista ? '#2ecc71' : '#ffd700';
+    } else if (q.def.tipo === 'kill') {
+      obj = g.enemies.find(e => !e.isDead && e.type === q.def.objetivoTipo &&
+        Math.hypot(e.x - p.x, e.y - p.y) < 700) || null;
+      color = '#e74c3c';
+    } else if (q.def.tipo === 'dungeon') {
+      obj = g.currentMap.portalesPos.find(pr => pr.rango === q.def.objetivoTipo) || null;
+      color = '#42a5f5';
+    }
+    if (!obj) return;
+    const dx = (obj.x + 16) - (p.x + 16), dy = (obj.y + 16) - (p.y + 16);
+    const d = Math.hypot(dx, dy);
+    if (d < 150) return; // ya está a la vista
+    const ang = Math.atan2(dy, dx);
+    const R = Math.min(W, H) / 2 - 84;
+    const ax = W / 2 + Math.cos(ang) * R, ay = H / 2 + Math.sin(ang) * R;
+    ctx.save();
+    ctx.translate(ax, ay);
+    ctx.rotate(ang);
+    ctx.globalAlpha = 0.7 + Math.sin((g.lastTime || 0) / 220) * 0.3;
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.moveTo(16, 0); ctx.lineTo(-9, -10); ctx.lineTo(-4, 0); ctx.lineTo(-9, 10);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = color;
+    ctx.font = `7px ${FONT}`;
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(d / 32) + 'm', ax, ay + 24);
+    ctx.font = `9px ${FONT}`;
   }
 
   _barra(ctx, x, y, w, h, pct, color, texto) {

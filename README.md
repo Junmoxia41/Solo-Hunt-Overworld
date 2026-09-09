@@ -1,6 +1,16 @@
 # ⚔️ Solo Hunt: Overworld — v2 (Action RPG 2D, JavaScript Vanilla)
 
-## ✨ v2.2.0 — P1: fixes de balance y calidad de vida (actual)
+## ⚔️ v2.3.0 — P2: profundidad de combate y progresión (actual)
+- **Ataques telegrafiados**: los enemigos cargan su golpe (anillo blanco que se cierra) antes de atacar — esquivable con dash o alejándote. Los jefes también (melé y carga del anillo de proyectiles).
+- **Élites con afijos** (★): veloz, escudado, vampírico o explosivo. ×2.2 vida, ×2.5 EXP/oro, aura de color y 25% más grandes. 10% en el bosque, 15% en mazmorras. El explosivo detona al morir: ¡aléjate de la mecha!
+- **Cadena de 10 misiones** del Guía del Gremio (cazar / recolectar / completar mazmorras E-D-C) con recompensas crecientes y objetos. Rastreador en el HUD y **flecha guía** al objetivo.
+- **Refinar equipo** en la tienda: oro + materiales (colmillos/huesos/alas) → +10% stats por nivel, hasta +5. Los materiales por fin sirven para algo.
+- **Sombras con talento propio**: las sombras de duende/mago disparan desde lejos; el resto pelea cuerpo a cuerpo.
+- **ARISE con dificultad variable**: la zona verde se encoge con el nivel del enemigo; parar en el CENTRO exacto = **¡PERFECTO!** sombra con +25% de vida.
+- **Regeneración limitada en combate** (las pociones importan) y **redistribución de stats** por oro en la pausa.
+- Refinado y misiones incluidos en el guardado. Service Worker `sh-v2-2.3.0`.
+
+## ✨ v2.2.0 — P1: fixes de balance y calidad de vida
 - **FIX jefes**: entregan la EXP y el oro prometidos (antes un bug les daba la recompensa de un enemigo normal).
 - **FIX móvil**: el zoom por pellizco ya no se dispara al apoyar un segundo dedo junto al joystick.
 - **Poción rápida**: tecla **H** (vida) y **J** (maná) en PC · botón **POT** en móvil · slot H con contador en el hotbar.

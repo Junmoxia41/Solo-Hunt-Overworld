@@ -149,6 +149,8 @@ export class Game {
       new NPC(this, 42 * 32, 38 * 32, 'mercader')
     ];
 
+    this.mazmorrasCompletadas = {}; // rango -> veces (misiones de mazmorra)
+
     // Partida guardada (restaura jugador, sombras y misión)
     this.saveInfo = SaveManager.load(this);
     if (this.saveInfo && this.saveInfo.player) SaveManager.applyToGame(this, this.saveInfo);
@@ -281,13 +283,14 @@ export class Game {
   }
 
   /* ---------- Spawns ---------- */
-  spawnEnemy(type, x, y, nivelZona = 1) {
+  spawnEnemy(type, x, y, nivelZona = 1, elite = false) {
     const Clase = {
       lobo: 'WolfEnemy', murcielago: 'BatEnemy', nomuerto: 'UndeadEnemy',
       duende: 'GoblinArcherEnemy', mago: 'DarkMageEnemy'
     }[type];
     return Clase && import('./enemy.js').then(m => {
       const e = new m[Clase](this, x, y, nivelZona);
+      if (elite) e.hacerElite(); // v2.3: élite con afijo
       this.enemies.push(e);
       return e;
     });
@@ -301,12 +304,13 @@ export class Game {
     const vivos = this.enemies.filter(e => !e.isDead).length;
     if (vivos >= 14) return;
     const tipo = ['lobo','lobo','murcielago','nomuerto','duende','mago'][randomInt(0, 5)];
+    const elite = Math.random() < 0.10; // v2.3: 10% de élites
     // aparecer fuera de la vista del jugador
     for (let i = 0; i < 20; i++) {
       const x = this.player.x + randomInt(-1, 1) * randomInt(380, 700);
       const y = this.player.y + randomInt(-1, 1) * randomInt(380, 700);
       if (x > 32 && y > 32 && x < this.currentMap.pixelW - 32 && y < this.currentMap.pixelH - 32 && !this.currentMap.isSolid(x + 16, y + 16)) {
-        this.spawnEnemy(tipo, x, y, 1);
+        this.spawnEnemy(tipo, x, y, 1, elite);
         break;
       }
     }
@@ -334,7 +338,7 @@ export class Game {
           const x = randomInt(4, this.currentMap.width - 4) * 32;
           const y = randomInt(4, this.currentMap.height - 4) * 32;
           if (!this.currentMap.isSolid(x, y) && Math.hypot(x - this.player.x, y - this.player.y) > 260) {
-            this.spawnEnemy(tipo, x, y, 1);
+            this.spawnEnemy(tipo, x, y, 1, Math.random() < 0.08);
             break;
           }
         }
