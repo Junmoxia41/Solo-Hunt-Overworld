@@ -33,6 +33,16 @@ export class Mapa {
     this.portalesPos = PORTALES.map(p => ({ ...p, x: p.tx * TILE_SIZE + 16, y: p.ty * TILE_SIZE + 16 }));
     for (const p of this.portalesPos) this._limpiarArea(p.tx, p.ty, 2); // plaza despejada
     this._limpiarArea(40, 40, 3); // zona de spawn central despejada
+
+    // Capa ALTA (árboles y rocas): se dibuja mezclada con las entidades
+    // en orden de profundidad (y) para que el jugador pase POR DETRÁS.
+    this.tall = [];
+    for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) {
+      const d = this.deco[ty * MAP_W + tx];
+      if (d === 'arbol') this.tall.push({ tipo: 'arbol', x: tx * TILE_SIZE + 16, baseY: ty * TILE_SIZE + 30, ancho: 46, alto: 65 });
+      else if (d === 'roca') this.tall.push({ tipo: 'roca', x: tx * TILE_SIZE + 16, baseY: ty * TILE_SIZE + 25, ancho: 28, alto: 24 });
+    }
+    this.tall.sort((a, b) => a.baseY - b.baseY);
   }
 
   _generar(seed) {
@@ -52,9 +62,9 @@ export class Mapa {
       // bosquecillos de pinos
       if (ruido(x, y, 1) > 0.93) { this.solid[i] = 3; this.deco[i] = 'arbol'; continue; }
       if (ruido(x, y, 2) > 0.965) this.deco[i] = 'flor';
-      else if (ruido(x, y, 3) > 0.975) this.deco[i] = 'roca';
+      else if (ruido(x, y, 3) > 0.975) { this.deco[i] = 'roca'; this.solid[i] = 4; } // roca SÓLIDA
       // camino de tierra en cruz desde el spawn
-      if (Math.abs(x - 40) <= 1 || Math.abs(y - 40) <= 1) { if (this.solid[i] !== 2) { this.suelo[i] = 2; } this.deco[i] = null; if (this.solid[i] === 3) this.solid[i] = 0; }
+      if (Math.abs(x - 40) <= 1 || Math.abs(y - 40) <= 1) { if (this.solid[i] !== 2) { this.suelo[i] = 2; } this.deco[i] = null; if (this.solid[i] >= 3) this.solid[i] = 0; }
       void rnd;
     }
   }
@@ -88,10 +98,16 @@ export class Mapa {
     return this.solid[ty * MAP_W + tx] !== 0;
   }
 
-  /** ¿Colisiona un rectángulo contra el mapa? (muestrea esquinas + centro) */
+  /** ¿Colisiona un rectángulo contra tiles sólidos? (recorre TODOS los
+   *  tiles que toca el rectángulo: sin puntos ciegos entre esquinas) */
   rectSolido(x, y, w, h) {
-    return this.isSolid(x, y) || this.isSolid(x + w, y) || this.isSolid(x, y + h) ||
-           this.isSolid(x + w, y + h) || this.isSolid(x + w / 2, y + h / 2);
+    const tx0 = Math.floor(x / TILE_SIZE), tx1 = Math.floor((x + w) / TILE_SIZE);
+    const ty0 = Math.floor(y / TILE_SIZE), ty1 = Math.floor((y + h) / TILE_SIZE);
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+      if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
+      if (this.solid[ty * MAP_W + tx] !== 0) return true;
+    }
+    return false;
   }
 
   render(ctx, camera) {
@@ -155,7 +171,7 @@ export class Mapa {
       ctx.strokeStyle = 'rgba(0,0,0,0.07)';
       ctx.strokeRect(px + .5, py + .5, T, T);
 
-      // Decoración (sprites remasterizados si están cargados)
+      // Decoración baja (flores) — árboles y rocas van en la capa alta
       const d = this.deco[i];
       const g = this.game;
       if (d === 'flor') {
@@ -166,33 +182,6 @@ export class Mapa {
         } else {
           ctx.font = '13px serif'; ctx.textAlign = 'center';
           ctx.fillText(((x + y) % 2) ? '🌸' : '🌼', px + 16, py + 21);
-        }
-      } else if (d === 'roca') {
-        const img = g.assets['tile_roca'];
-        if (img) {
-          // sombra de anclaje + roca
-          ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
-          ctx.beginPath(); ctx.ellipse(px + 16, py + 23, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-          ctx.drawImage(img, px + 16 - 14, py + 25 - 24, 28, 24);
-        } else {
-          ctx.fillStyle = '#7d8590';
-          ctx.beginPath(); ctx.arc(px + 16, py + 20, 9, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#565e68';
-          ctx.beginPath(); ctx.arc(px + 13, py + 17, 4, 0, Math.PI * 2); ctx.fill();
-        }
-      } else if (d === 'arbol') {
-        const img = g.assets['tile_arbol'];
-        if (img) {
-          ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
-          ctx.beginPath(); ctx.ellipse(px + 16, py + 28, 10, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
-          const wA = 46, hA = 65; // sprite 181x256 remasterizado
-          ctx.drawImage(img, px + 16 - wA / 2, py + 30 - hA, wA, hA);
-        } else {
-          ctx.fillStyle = '#5d4037'; ctx.fillRect(px + 13, py + 18, 6, 12);
-          ctx.fillStyle = '#14532d';
-          ctx.beginPath(); ctx.moveTo(px + 16, py - 4); ctx.lineTo(px + 4, py + 14); ctx.lineTo(px + 28, py + 14); ctx.fill();
-          ctx.fillStyle = '#166534';
-          ctx.beginPath(); ctx.moveTo(px + 16, py - 10); ctx.lineTo(px + 2, py + 8); ctx.lineTo(px + 30, py + 8); ctx.fill();
         }
       }
     }
@@ -227,6 +216,42 @@ export class Mapa {
           render(c) { c.save(); c.globalAlpha = this.alpha; c.fillStyle = this.color; c.beginPath(); c.arc(this.x, this.y, this.size, 0, 7); c.fill(); c.restore(); },
           isDead() { return this.life <= 0; }
         });
+      }
+    }
+  }
+
+  /** Dibuja un elemento ALTO (árbol/roca). El Game lo llama en orden de
+   *  profundidad mezclado con jugador/enemigos: si el jugador está por
+   *  detrás (pies más arriba), el árbol se pinta ENCIMA y lo tapa. */
+  dibujarAlto(ctx, it) {
+    const g = this.game;
+    if (it.tipo === 'arbol') {
+      const img = g.assets['tile_arbol'];
+      if (img) {
+        ctx.save(); ctx.globalAlpha = 0.3; ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(it.x, it.baseY - 2, 10, 3.5, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        const wA = 46, hA = 65; // sprite 181x256 remasterizado
+        ctx.drawImage(img, it.x - wA / 2, it.baseY - hA, wA, hA);
+      } else { // respaldo procedural
+        const px = it.x - 16, py = it.baseY - 32;
+        ctx.fillStyle = '#5d4037'; ctx.fillRect(px + 13, py + 18, 6, 12);
+        ctx.fillStyle = '#14532d';
+        ctx.beginPath(); ctx.moveTo(px + 16, py - 4); ctx.lineTo(px + 4, py + 14); ctx.lineTo(px + 28, py + 14); ctx.fill();
+        ctx.fillStyle = '#166534';
+        ctx.beginPath(); ctx.moveTo(px + 16, py - 10); ctx.lineTo(px + 2, py + 8); ctx.lineTo(px + 30, py + 8); ctx.fill();
+      }
+    } else if (it.tipo === 'roca') {
+      const img = g.assets['tile_roca'];
+      if (img) {
+        ctx.save(); ctx.globalAlpha = 0.28; ctx.fillStyle = '#000';
+        ctx.beginPath(); ctx.ellipse(it.x, it.baseY - 2, 12, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+        ctx.drawImage(img, it.x - 14, it.baseY - 24, 28, 24);
+      } else { // respaldo procedural
+        const px = it.x - 16, py = it.baseY - 32;
+        ctx.fillStyle = '#7d8590';
+        ctx.beginPath(); ctx.arc(px + 16, py + 20, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#565e68';
+        ctx.beginPath(); ctx.arc(px + 13, py + 17, 4, 0, Math.PI * 2); ctx.fill();
       }
     }
   }

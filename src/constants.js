@@ -11,6 +11,22 @@ export const MAP_H       = 80;
 export const FPS_TARGET  = 60;
 export const GRAVITY     = 0;    // top-down (se usa leve en partículas)
 
+// --- Cámara: zoom suave (el personaje se ve más de cerca) ---
+export const ZOOM_MIN          = 1.15;  // alejado
+export const ZOOM_MAX          = 3.25;  // muy cerca
+export const ZOOM_DEFAULT_PC   = 1.85;  // arranque en ordenador
+export const ZOOM_DEFAULT_MOVIL= 2.05;  // arranque en móvil (pantalla pequeña)
+
+// --- Pantallas de carga por escena (mínimo garantizado, ms) ---
+export const CARGA_MS = {
+  boot:     4200,  // arranque inicial del juego
+  bosque:   3000,  // entrar al bosque desde el menú
+  mazmorra: 3400,  // entrar a una mazmorra
+  piso:     3000,  // avanzar de piso
+  jefe:     3800,  // piso final del jefe
+  salida:   3000   // regresar al bosque
+};
+
 // --- Movimiento / combate del jugador ---
 export const PLAYER_SPEED          = 200;   // px/segundo
 export const DASH_SPEED            = 600;

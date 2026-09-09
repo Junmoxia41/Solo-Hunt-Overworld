@@ -33,6 +33,11 @@ export class InputManager {
       window.addEventListener('pointermove', e => {
         this.mouseX = e.clientX; this.mouseY = e.clientY;
       });
+      // PC: rueda del ratón = zoom de cámara
+      window.addEventListener('wheel', e => {
+        if (this.game.state !== 'PLAYING' || !this.game.camera) return;
+        this.game.camera.ajustarZoom(-Math.sign(e.deltaY) * 0.18);
+      }, { passive: true });
     }
     // Ratón: click izquierdo = atacar (jugando en PC también vale el ratón)
     this.game.canvas.addEventListener('pointerdown', e => {
@@ -43,8 +48,10 @@ export class InputManager {
   /** ¿Hay cursor utilizable? (PC sin modo táctil) */
   tieneCursor() { return !this.isMobile && this.mouseX !== null; }
 
-  /** Posición del cursor convertida a coordenadas del mundo */
-  aimMundo(camera) { return { x: this.mouseX + camera.x, y: this.mouseY + camera.y }; }
+  /** Posición del cursor convertida a coordenadas del mundo (respeta el zoom) */
+  aimMundo(camera) {
+    return { x: camera.x + this.mouseX / camera.zoom, y: camera.y + this.mouseY / camera.zoom };
+  }
 
   /* El navegador exige un gesto del usuario para habilitar WebAudio */
   audioKickstart() { this.game.audio?.desbloquear(); }
@@ -61,6 +68,7 @@ export class InputManager {
           this.joy.dx = this.joy.dy = 0;
         }
       }
+      this._trackPinch(e.touches);
       e.preventDefault();
     }, { passive: false });
 
@@ -76,6 +84,7 @@ export class InputManager {
           this.joy.baseY = this.joy.startY + dy;
         }
       }
+      this._trackPinch(e.touches);
       e.preventDefault();
     }, { passive: false });
 
@@ -85,6 +94,7 @@ export class InputManager {
           this.joy.active = false; this.joy.dx = this.joy.dy = 0;
         }
       }
+      this._trackPinch(e.touches);
     };
     cv.addEventListener('touchend', fin);
     cv.addEventListener('touchcancel', fin);
@@ -96,6 +106,21 @@ export class InputManager {
       this.pad[accion] = activo;
       if (activo) this.justPressed['_pad_' + accion] = true;
     });
+  }
+
+  /* Pellizco con dos dedos = zoom de cámara en móvil */
+  _trackPinch(touches) {
+    const cam = this.game.camera;
+    if (!cam) return;
+    if (touches.length >= 2) {
+      const dx = touches[0].clientX - touches[1].clientX;
+      const dy = touches[0].clientY - touches[1].clientY;
+      const d = Math.hypot(dx, dy);
+      if (!this._pinch) this._pinch = { d0: d, zoom0: cam.zoomTarget };
+      else if (d > 12) cam.setZoom(this._pinch.zoom0 * (d / this._pinch.d0));
+    } else {
+      this._pinch = null;
+    }
   }
 
   /* ---------- Lectura ---------- */
@@ -118,6 +143,8 @@ export class InputManager {
   isPause()       { return this.justPressed['Escape']; }
   isInventoryKey(){ return this.justPressed['KeyI']; }
   isMuted()       { return this.justPressed['KeyM']; }
+  isZoomIn()      { return this.justPressed['Equal'] || this.justPressed['NumpadAdd']; }
+  isZoomOut()     { return this.justPressed['Minus'] || this.justPressed['NumpadSubtract']; }
 
   clearFrame() { this.justPressed = {}; }
 

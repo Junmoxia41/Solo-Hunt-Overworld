@@ -1,7 +1,7 @@
 /* ============================================================
    game.js — Clase Game: loop principal, estados y escena
    ============================================================ */
-import { CANVAS_WIDTH, CANVAS_HEIGHT, AUTOSAVE_INTERVAL } from './constants.js';
+import { CANVAS_WIDTH, CANVAS_HEIGHT, AUTOSAVE_INTERVAL, ZOOM_DEFAULT_PC, ZOOM_DEFAULT_MOVIL, CARGA_MS } from './constants.js';
 import { Camera } from './camera.js';
 import { Player } from './player.js';
 import { Combat } from './combat.js';
@@ -48,7 +48,7 @@ export class Game {
   resize() {
     this.canvas.width = CANVAS_WIDTH();
     this.canvas.height = CANVAS_HEIGHT();
-    if (this.camera) { this.camera.width = this.canvas.width; this.camera.height = this.canvas.height; }
+    if (this.camera) this.camera.setScreen(this.canvas.width, this.canvas.height);
   }
 
   /* ---------- Carga de recursos ---------- */
@@ -61,26 +61,45 @@ export class Game {
     });
   }
 
-  /** Progreso visual de la pantalla de carga */
-  _configurarCarga(total) {
-    this._carga = { total, hechos: 0 };
-    this._tickCarga = () => {
-      this._carga.hechos++;
-      const pct = Math.round(100 * this._carga.hechos / this._carga.total);
-      const barra = document.getElementById('load-fill');
-      const num = document.getElementById('load-num');
-      const runner = document.getElementById('load-runner');
-      if (barra) barra.style.width = pct + '%';
-      if (num) num.textContent = pct + '%';
-      if (runner) runner.style.left = `calc(${pct}% - 12px)`;
-    };
+  /** Progreso visual de la pantalla de carga de arranque.
+   *  La barra NUNCA llega al 100% antes de `minMs` (mínimo por escena),
+   *  pero si la red va lenta sigue a los assets de verdad. */
+  _configurarCarga(total, minMs = 0) {
+    this._carga = { total, hechos: 0, t0: performance.now(), minMs };
+    this._cargaPromesa = new Promise(res => { this._cargaResolve = res; });
+    this._tickCarga = () => { this._carga.hechos++; };
+
+    if (minMs > 0) {
+      const tick = () => {
+        const c = this._carga;
+        const fracAssets = c.hechos / c.total;
+        const fracTiempo = Math.min(1, (performance.now() - c.t0) / c.minMs);
+        const terminado = fracAssets >= 1 && fracTiempo >= 1;
+        const pct = terminado ? 100 : Math.floor(Math.min(fracAssets, 0.25 + 0.75 * fracTiempo) * 100);
+        const barra = document.getElementById('load-fill');
+        const num = document.getElementById('load-num');
+        const runner = document.getElementById('load-runner');
+        if (barra) barra.style.width = pct + '%';
+        if (num) num.textContent = pct + '%';
+        if (runner) runner.style.left = `calc(${pct}% - 12px)`;
+        if (terminado) {
+          window.__cargaBootMs = Math.round(performance.now() - c.t0); // depuración/tests
+          const loader = document.getElementById('loading');
+          if (loader) { loader.classList.add('done'); setTimeout(() => loader.remove(), 800); }
+          this._cargaResolve();
+          return;
+        }
+        requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
   }
 
   async init() {
     this.resize();
 
-    // Progreso de carga total: 4 JSON + 12 cazadores + 5 enemigos + 3 tiles + 1 fondo de menú
-    this._configurarCarga(25);
+    // Progreso: 4 JSON + 12 frontales + 12 perfiles + 5 enemigos + 3 tiles + 4 key-arts
+    this._configurarCarga(40, CARGA_MS.boot);
 
     // Datos JSON (enemigos, items, misiones, diálogos)
     const [enemiesData, itemsData, questsData, dialoguesData] = await Promise.all([
@@ -91,9 +110,10 @@ export class Game {
     ]);
     this.data = { enemies: enemiesData, items: itemsData, quests: questsData, dialogues: dialoguesData };
 
-    // Sprites de los 12 cazadores (jugador seleccionable en futuras builds)
+    // Sprites de los 12 cazadores: frontal + PERFIL (para caminar mirando a los lados)
     const CHARS = ['kaito','rin','yuna','grom','sora','dante','mika','roku','elena','atlas','nix','hana'];
     await Promise.all(CHARS.map(async c => { this.assets['char_' + c] = await this.loadImage(`assets/chars/${c}.png`); }));
+    await Promise.all(CHARS.map(async c => { this.assets['lado_' + c] = await this.loadImage(`assets/chars/lado_${c}.png`); }));
     // Sprites de enemigos (si existen; si no, se dibujan por código)
     for (const t of ['lobo','murcielago','nomuerto','duende','mago']) {
       this.assets['mob_' + t] = await this.loadImage(`assets/sprites/${t}.png`);
@@ -102,8 +122,11 @@ export class Game {
     for (const d of ['arbol','flor','roca']) {
       this.assets['tile_' + d] = await this.loadImage(`assets/tiles/${d}.png`);
     }
-    // Fondo de menú: key-art aleatorio entre los 4 (el de carga puede ser otro)
-    this.assets['menu_bg'] = await this.loadImage(`assets/ui/loading_${randomInt(1, 4)}.png`);
+    // Los 4 key-arts de carga (el menú elige uno al azar; los loaders también)
+    await Promise.all([1, 2, 3, 4].map(async i => {
+      this.assets['loading_' + i] = await this.loadImage(`assets/ui/loading_${i}.png`);
+    }));
+    this.assets['menu_bg'] = this.assets['loading_' + randomInt(1, 4)];
 
     // Sistemas
     this.input = new InputManager(this);
@@ -111,7 +134,11 @@ export class Game {
     this.audio = new AudioManager();
     this.ui = new UI(this);
     this.combat = new Combat(this);
-    this.camera = new Camera(0, 0, this.canvas.width, this.canvas.height);
+    // Cámara con ZOOM: el personaje se ve más de cerca (más aún en móvil)
+    this.camera = new Camera(
+      this.canvas.width, this.canvas.height,
+      this.input.isMobile ? ZOOM_DEFAULT_MOVIL : ZOOM_DEFAULT_PC
+    );
     this.currentMap = new Mapa(this, 1); // zona semilla del bosque
     this.inventory = new Inventory(this);
     this.dialogue = new DialogueManager(this);
@@ -128,10 +155,10 @@ export class Game {
     this.quests = new QuestGuia(this);
 
     this.spawnOleadaInicial();
+    this.camera.snap(this.player, this.currentMap); // cámara centrada desde el frame 1
 
-    // Quitar la pantalla de carga (con fundido)
-    const loader = document.getElementById('loading');
-    if (loader) { loader.classList.add('done'); setTimeout(() => loader.remove(), 800); }
+    // Respetar la duración mínima de la pantalla de carga de arranque
+    await this._cargaPromesa;
 
     // Autoguardado (nunca dentro de una mazmorra: el mapa sería temporal)
     this._autosave = setInterval(() => {
@@ -159,6 +186,12 @@ export class Game {
     // Hitlag: congela el mundo unos frames al impactar
     this.combat.updateTimers(dt);
     const hitlag = this.combat.hitlagTimer > 0;
+
+    // Zoom de cámara con teclas +/− (la rueda y el pellizco van por InputManager)
+    if (this.state === 'PLAYING') {
+      if (this.input.isZoomIn()) this.camera.ajustarZoom(0.2);
+      if (this.input.isZoomOut()) this.camera.ajustarZoom(-0.2);
+    }
 
     if (this.state === 'PLAYING' && !hitlag) {
       this.playTime += dt;
@@ -195,6 +228,9 @@ export class Game {
     if (this.state === 'MENU') { this.ui.renderMenuCanvas(ctx); return; }
 
     ctx.save();
+    // ZOOM: el mundo se dibuja escalado; la cámara ya tiene la vista
+    // reducida (ancho/alto = pantalla/zoom) para seguir y recortar bien.
+    ctx.scale(this.camera.zoom, this.camera.zoom);
     ctx.translate(
       -Math.round(this.camera.x + this.combat.shake.x),
       -Math.round(this.camera.y + this.combat.shake.y)
@@ -202,8 +238,19 @@ export class Game {
 
     this.currentMap.render(ctx, this.camera);
 
-    // Orden de render por profundidad (y) para efecto top-down
+    // Orden de render por profundidad (y) para efecto top-down.
+    // La capa ALTA del mapa (árboles, rocas, pilares) se mezcla con las
+    // entidades: si el jugador está detrás (pies más arriba), lo tapan.
+    const mapa = this.currentMap;
+    const capaAlta = (mapa.tall || []).map(it => ({
+      y: it.baseY,
+      o: {
+        x: it.x - 32, y: it.baseY - 96, width: 64, height: 120,
+        render: c => mapa.dibujarAlto(c, it)
+      }
+    }));
     const dibujables = [
+      ...capaAlta,
       ...this.groundItems.map(g => ({ y: g.y, o: g })),
       ...this.npcs.map(n => ({ y: n.y, o: n })),
       ...this.shadows.map(s => ({ y: s.y, o: s })),

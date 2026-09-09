@@ -5,10 +5,11 @@
    piso, un jefe con 3 fases. Con temporizador y resultados.
    Ver GDD v2.0 §FASE 7 y §FASE 13.
    ============================================================ */
-import { TILE_SIZE, MAP_W, MAP_H } from './constants.js';
+import { TILE_SIZE, MAP_W, MAP_H, CARGA_MS } from './constants.js';
 import { seededRng, randomInt, randomFloat, distance } from './utils.js';
 import { Boss } from './boss.js';
 import { crearItem, GroundItem } from './item.js';
+import { pantallaCarga } from './loader.js';
 
 /* ---------- Configuración por rango ---------- */
 export const RANGOS = {
@@ -36,6 +37,16 @@ export class DungeonMap {
     this.portalesPos = [];                            // SALIDA (se activa al limpiar)
 
     this._generar(seed);
+
+    // Pilares a la capa ALTA (se dibujan con profundidad: el jugador
+    // puede pasar por detrás y el pilar lo tapa)
+    this.tall = [];
+    for (let ty = 0; ty < MAP_H; ty++) for (let tx = 0; tx < MAP_W; tx++) {
+      if (this.solid[ty * MAP_W + tx] === 3) {
+        this.tall.push({ tipo: 'pilar', x: tx * TILE_SIZE + 16, baseY: ty * TILE_SIZE + TILE_SIZE, ancho: 32, alto: 40 });
+      }
+    }
+    this.tall.sort((a, b) => a.baseY - b.baseY);
   }
 
   _pon(tx, ty, suelo, solid, deco = null) {
@@ -105,9 +116,23 @@ export class DungeonMap {
     if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
     return this.solid[ty * MAP_W + tx] !== 0;
   }
+  /** Recorre TODOS los tiles que toca el rectángulo (sin puntos ciegos) */
   rectSolido(x, y, w, h) {
-    return this.isSolid(x, y) || this.isSolid(x + w, y) || this.isSolid(x, y + h) ||
-           this.isSolid(x + w, y + h) || this.isSolid(x + w / 2, y + h / 2);
+    const tx0 = Math.floor(x / TILE_SIZE), tx1 = Math.floor((x + w) / TILE_SIZE);
+    const ty0 = Math.floor(y / TILE_SIZE), ty1 = Math.floor((y + h) / TILE_SIZE);
+    for (let ty = ty0; ty <= ty1; ty++) for (let tx = tx0; tx <= tx1; tx++) {
+      if (tx < 0 || ty < 0 || tx >= MAP_W || ty >= MAP_H) return true;
+      if (this.solid[ty * MAP_W + tx] !== 0) return true;
+    }
+    return false;
+  }
+
+  /** Dibuja un pilar (capa alta, orden de profundidad con el jugador) */
+  dibujarAlto(ctx, it) {
+    if (it.tipo !== 'pilar') return;
+    ctx.fillStyle = '#262b3d'; ctx.fillRect(it.x - 16, it.baseY - 32, 32, 32);
+    ctx.fillStyle = '#1a1e2e'; ctx.fillRect(it.x - 11, it.baseY - 34, 22, 38);
+    ctx.fillStyle = '#333a52'; ctx.fillRect(it.x - 11, it.baseY - 34, 22, 5);
   }
 
   render(ctx, camera) {
@@ -135,10 +160,9 @@ export class DungeonMap {
           brillo.addColorStop(0, 'rgba(255,150,50,0.28)'); brillo.addColorStop(1, 'rgba(0,0,0,0)');
           ctx.fillStyle = brillo; ctx.beginPath(); ctx.arc(px + 16, py + 16, 60, 0, Math.PI * 2); ctx.fill();
         }
-      } else if (this.solid[i] === 3) { // pilar
-        ctx.fillStyle = '#262b3d'; ctx.fillRect(px, py, T, T);
-        ctx.fillStyle = '#1a1e2e'; ctx.fillRect(px + 5, py - 2, 22, T + 6);
-        ctx.fillStyle = '#333a52'; ctx.fillRect(px + 5, py - 2, 22, 5);
+      } else if (this.solid[i] === 3) { // pilar: suelo debajo; la columna va en la capa alta
+        ctx.fillStyle = this.suelo[i] === 1 ? '#2b3044' : '#232739';
+        ctx.fillRect(px, py, T, T);
       } else { // suelo
         ctx.fillStyle = this.suelo[i] === 1 ? '#2b3044' : '#232739';
         ctx.fillRect(px, py, T, T);
@@ -185,16 +209,32 @@ export class Dungeon {
     this._pisoSemilla = Math.floor(Math.random() * 1e9);
   }
 
-  /* ===== Entrar ===== */
-  entrar() {
+  /* ===== Entrar (con pantalla de carga de escena) ===== */
+  async entrar() {
     const g = this.game;
-    // Foto del overworld para restaurar al salir
-    this._ow = { mapa: g.currentMap, enemigos: g.enemies, npcs: g.npcs, pos: { x: g.player.x, y: g.player.y } };
-    g.enemies = []; g.npcs = []; g.projectiles = []; g.groundItems = [];
-    this._cargarPiso();
-    g.dungeon = this;
+    g.audio.playSFX('portal');
+    await pantallaCarga(g, {
+      titulo: 'MAZMORRA',
+      sub: `RANGO ${this.rango} · PISO 1/${this.cfg.pisos}`,
+      minMs: CARGA_MS.mazmorra,
+      pasos: [
+        'Sellando la entrada a tu espalda…',
+        'Despertando a las bestias…',
+        'Encendiendo las antorchas…',
+        'Colocando losas y trampas…',
+        'El tiempo ya corre…'
+      ],
+      alMedias: () => {
+        // Foto del overworld para restaurar al salir
+        this._ow = { mapa: g.currentMap, enemigos: g.enemies, npcs: g.npcs, pos: { x: g.player.x, y: g.player.y } };
+        g.enemies = []; g.npcs = []; g.projectiles = []; g.groundItems = [];
+        this._cargarPiso();
+        g.dungeon = this;
+        g.audio.playBGM('combat');
+      }
+    });
+    g.changeState('PLAYING');
     g.ui.toast(`🌀 Mazmorra Rango ${this.rango} — Piso 1/${this.cfg.pisos} · Límite ${this._tmm()}`, '#42a5f5', 4200);
-    g.audio.playBGM('combat');
   }
 
   _tmm() { // mm:ss del tiempo restante
@@ -238,6 +278,9 @@ export class Dungeon {
       g.enemies.push(boss);
       g.ui.toast(`🚪 Piso final — la sala del trono te espera`, this.cfg.jefe.css, 4000);
     }
+
+    // La cámara salta directamente al jugador (sin lerp desde el mapa anterior)
+    if (g.camera) g.camera.snap(g.player, g.currentMap);
   }
 
   /** El boss invoca esbirros desde aquí (control de escala de zona) */
@@ -311,16 +354,34 @@ export class Dungeon {
     }
   }
 
-  /* ===== Avanzar por el portal ===== */
-  avanzar() {
+  /* ===== Avanzar por el portal (con pantalla de carga de piso) ===== */
+  async avanzar() {
     const g = this.game;
     const portal = g.currentMap.portalesPos[0];
     if (!portal) return;
     if (!portal.final) {
       this.piso++;
+      const esJefe = this.piso === this.cfg.pisos;
       g.audio.playSFX('portal');
       g.addParticles(g.player.x + 16, g.player.y + 16, 'portal', 30);
-      this._cargarPiso();
+      await pantallaCarga(g, {
+        titulo: esJefe ? 'PISO FINAL' : 'MAZMORRA',
+        sub: esJefe ? `RANGO ${this.rango} · ${this.cfg.jefe.nombre}` : `RANGO ${this.rango} · PISO ${this.piso}/${this.cfg.pisos}`,
+        minMs: esJefe ? CARGA_MS.jefe : CARGA_MS.piso,
+        pasos: esJefe ? [
+          'El aire se vuelve pesado…',
+          'Algo enorme respira en la oscuridad…',
+          'El trono aparece al fondo…',
+          'Que empiece la caza…'
+        ] : [
+          'Tallando el siguiente piso…',
+          'Invocando más bestias…',
+          'Repintando las runas…',
+          'Casi listo…'
+        ],
+        alMedias: () => this._cargarPiso()
+      });
+      g.changeState('PLAYING');
     } else {
       this.complete();
     }
@@ -338,10 +399,11 @@ export class Dungeon {
     for (const e of g.enemies) { e.knockbackVx = 0; e.knockbackVy = 0; }
     g.dungeon = null;
     g.audio.playBGM('overworld');
-    g.changeState('PLAYING');
+    if (g.camera) g.camera.snap(g.player, g.currentMap); // sin lerp de vuelta
+    // OJO: no cambiamos estado aquí — lo pone quien llama al terminar su carga
   }
 
-  complete() {
+  async complete() {
     const g = this.game;
     const bonusExp = this.stats.exp; // EXP x2: doblamos lo ganado dentro
     const bonusOro = this.cfg.premioOroBase;              // recompensa fija del rango
@@ -354,16 +416,28 @@ export class Dungeon {
       sombras: g.shadows.length
     };
     g.player.gold += oroTotal;
-    if (bonusExp > 0) g.player.gainExp(bonusExp); // puede disparar LEVEL_UP; la UI lo gestiona tras el panel
+    if (bonusExp > 0) g.player.gainExp(bonusExp); // los puntos de stat pendientes se muestran tras el panel
     g.audio.playSFX('levelUp');
-    this._salir();
+    await pantallaCarga(g, {
+      titulo: 'BOSQUE',
+      sub: 'REGRESO AL EXTERIOR',
+      minMs: CARGA_MS.salida,
+      pasos: ['Cruzando el portal dorado…', 'El bosque te reconoce…', 'Aullidos a lo lejos…'],
+      alMedias: () => this._salir()
+    });
     g.ui.mostrarResultadosDungeon(datos);
   }
 
-  fail(motivo) {
+  async fail(motivo) {
     const g = this.game;
     const datos = { motivo, rango: this.rango, pisos: this.piso, kills: this.stats.kills, oro: this.stats.oro };
-    this._salir();
+    await pantallaCarga(g, {
+      titulo: 'BOSQUE',
+      sub: 'REAGRUPÁNDOSE…',
+      minMs: CARGA_MS.salida,
+      pasos: ['La mazmorra escupe tu cuerpo…', 'El bosque te reconoce…', 'A lamerse las heridas…'],
+      alMedias: () => this._salir()
+    });
     g.ui.mostrarFalloDungeon(datos);
   }
 }

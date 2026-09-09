@@ -3,12 +3,13 @@
    minimapa) + overlays HTML (menú, pausa, level up, game over,
    inventario) + minijuego de extracción ARISE + toasts.
    ============================================================ */
-import { COLORS, RARITY_COLORS, DASH_COOLDOWN, HEAVY_ATTACK_COOLDOWN, SKILL_COOLDOWN, SHADOW_MAX, SHADOW_EXTRACT_CD } from './constants.js';
+import { COLORS, RARITY_COLORS, DASH_COOLDOWN, HEAVY_ATTACK_COOLDOWN, SKILL_COOLDOWN, SHADOW_MAX, SHADOW_EXTRACT_CD, CARGA_MS } from './constants.js';
 import { clamp, formatNumber } from './utils.js';
 import { ICONOS, crearItem } from './item.js';
 import { SaveManager } from './save.js';
 import { puedeExtraer } from './shadow.js';
 import { Dungeon, RANGOS } from './dungeon.js';
+import { pantallaCarga } from './loader.js';
 
 const FONT = '"Press Start 2P", monospace';
 
@@ -89,6 +90,7 @@ export class UI {
     for (let y = 0; y < m.height; y++) for (let x = 0; x < m.width; x++) {
       const i = y * m.width + x;
       c2.fillStyle = m.solid[i] === 1 || m.solid[i] === 3 ? '#20242e'
+        : m.solid[i] === 4 ? '#5c6673' // rocas (ahora sólidas)
         : m.suelo[i] === 3 ? '#1e3f8f'
         : m.suelo[i] === 2 ? '#6b4f2a'
         : (x + y) % 2 ? '#2f7a3d' : '#2a6f38';
@@ -144,11 +146,10 @@ export class UI {
       <button class="rpg-btn purple" id="bt-nueva">✦ Nueva partida</button>
       <button class="rpg-btn small" id="bt-cazador">🧝 Cazador</button>
       <button class="rpg-btn small" id="bt-creditos">Créditos</button>
-      <div class="title-ver">v2.0 Remaster · Acción en tiempo real · Z/X/Shift/C · I inventario · M mapa</div>`;
-    o.querySelector('#bt-continuar').addEventListener('click', () => {
+      <div class="title-ver">v2.1 · 🎥 zoom: rueda/+/− · I inventario · M mapa · N sonido</div>`;
+    o.querySelector('#bt-continuar').addEventListener('click', async () => {
       this.game.audio.playSFX('menuOk');
-      this.game.changeState('PLAYING');
-      this.toast('🌲 Zona: Bosque Inicial — busca al Guía del Gremio', '#2ecc71', 3600);
+      await this._entrarBosque();
     });
     o.querySelector('#bt-nueva').addEventListener('click', () => {
       this.game.audio.playSFX('menuOk');
@@ -156,10 +157,7 @@ export class UI {
       const habiaDatosCargados = !!this.game.saveInfo?.player;
       SaveManager.deleteSave();
       if (habiaDatosCargados) location.reload(); // reinicio limpio si había progreso cargado
-      else {
-        this.game.changeState('PLAYING');
-        this.toast('🌲 Zona: Bosque Inicial — busca al Guía del Gremio', '#2ecc71', 3600);
-      }
+      else this._entrarBosque();
     });
     o.querySelector('#bt-cazador').addEventListener('click', () => {
       this.game.audio.playSFX('menuMove');
@@ -169,6 +167,25 @@ export class UI {
       this.game.audio.playSFX('menuMove');
       this.toast('Hecho con ♥ por Junmoxia41 + Arena · Sprites IA originales · Motor: Canvas 2D vanilla', '#9b59b6', 4200);
     });
+  }
+
+  /* ---------- Entrar al bosque desde el menú (con carga de escena) ---------- */
+  async _entrarBosque() {
+    const g = this.game;
+    await pantallaCarga(g, {
+      titulo: 'BOSQUE',
+      sub: 'EL BOSQUE DE PENUMBRA',
+      minMs: CARGA_MS.bosque,
+      pasos: [
+        'Espabilando a los lobos…',
+        'Meciéndose las flores…',
+        'Encendiendo las luciérnagas…',
+        'El Guía del Gremio te espera…'
+      ]
+    });
+    g.camera.snap(g.player, g.currentMap);
+    g.changeState('PLAYING');
+    this.toast('🌲 Zona: Bosque Inicial — busca al Guía del Gremio', '#2ecc71', 3600);
   }
 
   /* ==================== Tienda del Mercader Krow ==================== */
@@ -279,6 +296,7 @@ export class UI {
         <h2>⏸ PAUSA</h2>
         <p style="text-align:center">Nivel ${p.level} · 💰 ${formatNumber(p.gold)} · ☠️ ${p.totalKills} bajas · 🌑 ${g.shadows.length}/${SHADOW_MAX} sombras</p>
         <p style="text-align:center;margin-top:6px">ATQ ${p.atk} · DEF ${p.def} · MATQ ${p.matk} · CRIT ${p.critChance.toFixed(1)}%</p>
+        <p style="text-align:center;font-size:8px;color:#b9b9d0;margin-top:8px">🎥 Cámara: rueda del ratón o +/− (pellizco en móvil) · ahora x${g.camera ? g.camera.zoom.toFixed(2) : '—'}</p>
         <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;align-items:center">
           <button class="rpg-btn" id="bt-resume">▶ Continuar</button>
           <button class="rpg-btn small" id="bt-inv">🎒 Inventario (I)</button>
@@ -490,11 +508,9 @@ export class UI {
         </div>
       </div>`;
     o.querySelector('#bt-back').onclick = () => g.changeState('PLAYING');
-    if (nivelOk) o.querySelector('#bt-enter').onclick = () => {
-      g.changeState('PLAYING');
-      g.audio.playSFX('portal');
+    if (nivelOk) o.querySelector('#bt-enter').onclick = async () => {
       g.addParticles(g.player.x + 16, g.player.y + 16, 'portal', 30);
-      new Dungeon(g, portal.rango).entrar();
+      await new Dungeon(g, portal.rango).entrar(); // entra con su pantalla de carga
     };
   }
 
@@ -854,6 +870,21 @@ export class UI {
     for (const n of g.npcs) punto(n.x, n.y, '#2ecc71', 3);
     for (const e of g.enemies) if (!e.isDead) punto(e.x, e.y, '#e74c3c', 2.5);
     punto(g.player.x, g.player.y, '#ffffff', 4);
+
+    // Rectángulo de la vista de la cámara (respeta el zoom)
+    if (g.camera) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(
+        x0 + g.camera.x * esc, y0 + g.camera.y * esc,
+        Math.max(3, g.camera.width * esc), Math.max(3, g.camera.height * esc)
+      );
+      // indicador de zoom
+      ctx.fillStyle = '#c7d2fe';
+      ctx.font = `7px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.fillText(`🔍 x${g.camera.zoom.toFixed(1)}`, x0 + S / 2, y0 + S + 12);
+    }
   }
 
   /* ==================== Fondo del menú (canvas) ==================== */

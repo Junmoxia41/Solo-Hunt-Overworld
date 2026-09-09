@@ -1,5 +1,13 @@
 # ⚔️ Solo Hunt: Overworld — v2 (Action RPG 2D, JavaScript Vanilla)
 
+## 🎥 v2.1 — Cámara con zoom, colisiones y profundidad (actual)
+- **Cámara con zoom real**: el personaje se ve más de cerca (x1.85 en PC, x2.05 en móvil). Zoom suave con **rueda del ratón**, teclas **+/−** y **pellizco** en móvil. Límites x1.15–x3.25 y la vista aparece dibujada en el minimapa.
+- **Rocas con colisión**: el jugador ya no pasa por encima; el chequeo de colisión recorre todos los tiles que toca el rectángulo (sin puntos ciegos).
+- **Profundidad de árboles/rocas/pilares**: al pasar por detrás de un árbol, el tronco y la copa se dibujan ENCIMA del jugador (orden por coordenada Y, estilo top-down clásico). Los pilares de mazmorra igual.
+- **Sprites de perfil**: los cazadores tienen vista lateral (`lado_*.png`); caminar a la derecha/izquierda voltea el sprite hacia esa dirección. Enemigos y sombras también miran hacia su objetivo.
+- **Pantallas de carga por escena (3–5 s)**: arranque (4.2 s), entrar al bosque, cada piso de mazmorra, piso del jefe (3.8 s) y regreso al bosque. Barra animada con pasos temáticos, key-art y chibi aleatorios.
+- Service Worker `sh-v2-2.1.0` (precarga total, offline).
+
 Reescritura total en **HTML5 + CSS3 + JS ES6+ puro** (sin frameworks, sin dependencias, sin build).
 Motor propio sobre **Canvas 2D API**, audio **Web Audio API sintetizado** (0 MB de archivos),
 guardado en **localStorage** (`soloHuntSaveV2`), módulos ES6, `requestAnimationFrame`.
@@ -14,8 +22,10 @@ guardado en **localStorage** (`soloHuntSaveV2`), módulos ES6, `requestAnimation
 | Shadow Strike | C | Botón SKL |
 | Interactuar / ARISE | E | Botón INT |
 | Inventario | I | (desde pausa) |
+| Mapa mundial | M | — |
 | Pausa | Esc | — |
-| Silencio | M | — |
+| Silencio | N | — |
+| Zoom de cámara | Rueda del ratón / + y − | Pellizco con dos dedos |
 | Rol sombras (ataque/defensa) | T | — |
 
 ## ✨ Milestone 1 (actual) — Overworld jugable

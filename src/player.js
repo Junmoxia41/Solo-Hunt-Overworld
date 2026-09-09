@@ -210,6 +210,7 @@ export class Player {
         const m = g.input.aimMundo(g.camera);
         dx = m.x - (this.x + 16); dy = m.y - (this.y + 16);
         this.facingSign = dx >= 0 ? 1 : -1;
+        if (Math.abs(dx) >= Math.abs(dy)) this.direction = dx >= 0 ? 'right' : 'left';
       } else {
         const m = inp.getMovement();
         dx = m.x; dy = m.y;
@@ -235,8 +236,10 @@ export class Player {
     const cy = this.y + 16 + Math.sin(ang) * dist;
     this.hitbox = { x: cx - radio, y: cy - radio, width: radio * 2, height: radio * 2, active: true, circular: true };
     this._hitRegistered = false;
-    // el cuerpo gira hacia el golpe
+    // el cuerpo gira hacia el golpe (de lado si el golpe es horizontal)
     this.facingSign = Math.cos(ang) >= 0 ? 1 : -1;
+    if (Math.abs(Math.cos(ang)) > Math.abs(Math.sin(ang))) this.direction = this.facingSign > 0 ? 'right' : 'left';
+    else this.direction = Math.sin(ang) > 0 ? 'down' : 'up';
     this._aimAng = ang; // lo usa el render del arco
   }
 
@@ -356,7 +359,12 @@ export class Player {
     if (this.isInvincible && !this.isDashing && Math.floor(this.iframeTimer * 12) % 2 === 0) return;
 
     const bob = Math.sin(this.animTimer * (this.isMoving ? 11 : 3)) * (this.isMoving ? 2.5 : 1.2);
-    const img = this.game.assets['char_' + this.charId];
+    // Sprite de PERFIL al caminar en horizontal; frontal en vertical.
+    // Si no hay perfil generado, cae al frontal (que también se voltea).
+    const deLado = this.direction === 'left' || this.direction === 'right';
+    this._usandoLado = deLado; // (depuración/tests)
+    const img = (deLado ? this.game.assets['lado_' + this.charId] : null) ||
+                this.game.assets['char_' + this.charId];
     const size = 58;
 
     // Sombra en los pies (a la altura real de la suela del sprite)

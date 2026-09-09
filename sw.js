@@ -3,7 +3,7 @@
    Estrategia: PRECACHE total al instalar + cache-first en fetch.
    El juego es 100% offline tras la primera visita.
    ============================================================ */
-const CACHE = 'sh-v2-remaster.0';
+const CACHE = 'sh-v2-2.1.0';
 
 // Todo lo necesario para jugar sin conexión
 const PRECACHE = [
@@ -13,7 +13,7 @@ const PRECACHE = [
   './src/boss.js', './src/combat.js', './src/projectile.js', './src/particle.js',
   './src/item.js', './src/inventory.js', './src/quest.js', './src/npc.js',
   './src/dialogue.js', './src/shadow.js', './src/map.js', './src/dungeon.js',
-  './src/ui.js', './src/audio.js', './src/save.js',
+  './src/ui.js', './src/audio.js', './src/save.js', './src/loader.js',
   './data/enemies.json', './data/items.json', './data/quests.json', './data/dialogues.json',
   './assets/fonts/pressstart2p.woff2',
   './assets/ui/icon-192.png', './assets/ui/icon-512.png',
@@ -24,6 +24,11 @@ const PRECACHE = [
   './assets/chars/grom.png', './assets/chars/sora.png', './assets/chars/dante.png',
   './assets/chars/mika.png', './assets/chars/roku.png', './assets/chars/elena.png',
   './assets/chars/atlas.png', './assets/chars/nix.png', './assets/chars/hana.png',
+  './assets/chars/lado_kaito.png', './assets/chars/lado_rin.png',
+  './assets/chars/lado_grom.png', './assets/chars/lado_sora.png',
+  './assets/chars/lado_dante.png', './assets/chars/lado_mika.png',
+  './assets/chars/lado_roku.png', './assets/chars/lado_atlas.png',
+  './assets/chars/lado_nix.png', './assets/chars/lado_hana.png',
   './assets/sprites/lobo.png', './assets/sprites/murcielago.png',
   './assets/sprites/nomuerto.png', './assets/sprites/duende.png', './assets/sprites/mago.png',
   './assets/tiles/arbol.png', './assets/tiles/flor.png', './assets/tiles/roca.png'

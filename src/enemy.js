@@ -259,9 +259,16 @@ export class Enemy {
   }
 
   _dibujarCuerpo(ctx, img, bob) {
+    // Volteo horizontal: la bestia mira hacia su presa (el jugador)
+    const p = this.game.player;
+    const fs = p && (p.x + 16) < (this.x + 16) ? -1 : 1;
     if (img) {
       const S = 56;
-      ctx.drawImage(img, this.x + 16 - S / 2, this.y + 16 - S / 2 - 6 + bob, S, S);
+      ctx.save();
+      ctx.translate(this.x + 16, this.y + 10 + bob); // centro del sprite
+      ctx.scale(fs, 1);
+      ctx.drawImage(img, -S / 2, -S / 2, S, S);
+      ctx.restore();
     } else {
       // Arte procedural de respaldo: silueta redonda + emoji
       ctx.save();

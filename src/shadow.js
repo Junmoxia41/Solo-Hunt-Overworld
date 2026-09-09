@@ -137,11 +137,16 @@ export class Shadow {
     ctx.restore();
 
     // cuerpo: sprite del tipo original oscurecido con tinte umbrío
+    // (volteado hacia su objetivo si lo tiene)
     ctx.save();
     ctx.filter = 'brightness(0.38) hue-rotate(200deg) saturate(1.6)';
     const S = 54;
-    if (img) ctx.drawImage(img, this.x + 16 - S / 2, this.y + 16 - S / 2 - 5 + bob, S, S);
-    else {
+    if (img) {
+      const fs = this.target && this.target.x + 16 < this.x + 16 ? -1 : 1;
+      ctx.translate(this.x + 16, this.y + 11 + bob);
+      ctx.scale(fs, 1);
+      ctx.drawImage(img, -S / 2, -S / 2, S, S);
+    } else {
       ctx.fillStyle = '#2b1055';
       ctx.beginPath(); ctx.arc(this.x + 16, this.y + 16 + bob, 15, 0, Math.PI * 2); ctx.fill();
     }
